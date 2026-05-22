@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>书签审核工具</title>
+<style>
+:root{--bg:#f4f1ec;--sf:#fffbf5;--sf2:#f9f5ee;--tx:#1a1714;--mt:#6e665d;--ln:#ddd4c8;--ac:#b05830;--ach:#8e3f1e;--grn:#1d7a50;--gbg:#e8f5ee;--amb:#a85c00;--abg:#fef4e0;--blu:#2068a8;--bbg:#e6f0fb;--red:#b8342c;--rbg:#fce8e6;--r:14px;--sh:0 2px 12px rgba(60,40,20,.08)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+
+.import-wrap{max-width:720px;margin:60px auto;padding:0 20px}
+.import-wrap h1{font-size:24px;margin:0 0 6px}
+.import-wrap .desc{color:var(--mt);margin:0 0 28px}
+.drop-zone{border:2px dashed var(--ln);border-radius:16px;padding:36px 24px;text-align:center;background:#fff;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:16px}
+.drop-zone.over{border-color:var(--ac);background:#fef8f4}
+.drop-zone h3{margin:0 0 4px;font-size:16px}
+.drop-zone p{margin:0;color:var(--mt);font-size:13px}
+.drop-zone .fname{margin-top:8px;font-weight:700;color:var(--grn)}
+.go-btn{display:block;width:100%;padding:13px;border:none;border-radius:var(--r);background:var(--ac);color:#fff;font:600 15px/1 inherit;cursor:pointer;margin-top:8px}
+.go-btn:hover{background:var(--ach)}
+.go-btn:disabled{opacity:.4;cursor:default}
+
+header{position:sticky;top:0;z-index:20;background:rgba(244,241,236,.88);backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--ln)}
+.hdr{max-width:1100px;margin:0 auto;padding:14px 20px}
+h1.rev{margin:0;font-size:20px}
+.sub{color:var(--mt);margin:2px 0 0;font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.bar input{flex:1;min-width:160px;border:1px solid var(--ln);border-radius:var(--r);padding:8px 11px;background:#fff;font:inherit}
+.bar select,.bar button{border:1px solid var(--ln);border-radius:var(--r);padding:8px 12px;background:#fff;font:inherit;cursor:pointer;white-space:nowrap}
+.bar .pri{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
+.bar .pri:hover{background:var(--ach)}
+main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:14px}
+.stat{background:var(--sf);border:1px solid var(--ln);border-radius:var(--r);padding:12px;text-align:center}
+.stat b{display:block;font-size:20px}
+.stat span{color:var(--mt);font-size:11px}
+.batch{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.batch button{border:1px solid var(--ln);border-radius:10px;padding:6px 11px;background:var(--sf);font:13px inherit;cursor:pointer}
+.list{display:grid;gap:10px}
+.card{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:13px 15px;box-shadow:var(--sh);transition:border-color .15s}
+.card:hover{border-color:#c4b9ac}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.title{font-weight:700;font-size:15px}
+.url{color:var(--blu);word-break:break-all;font-size:12px;margin-top:2px}
+.url a{color:inherit;text-decoration:none}
+.url a:hover{text-decoration:underline}
+.path{color:var(--mt);font-size:12px;margin-top:3px}
+.tag{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.tag.hub{background:var(--bbg);color:var(--blu)}
+.tag.saf{background:var(--gbg);color:var(--grn)}
+.tag.dif{background:var(--abg);color:var(--amb)}
+.meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{border:1px solid var(--ln);background:var(--sf2);border-radius:999px;padding:1px 7px;font-size:11px;color:var(--mt)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.pnl{border:1px solid var(--ln);border-radius:10px;padding:9px 11px;background:var(--sf2)}
+.pnl h3{margin:0 0 4px;font-size:13px;font-weight:700}
+.pnl p{margin:2px 0;color:var(--mt);font-size:12px;word-break:break-all}
+.acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.act{border:1px solid var(--ln);border-radius:9px;padding:5px 12px;background:#fff;font:13px inherit;cursor:pointer;transition:all .12s;user-select:none}
+.act:hover{border-color:#aaa}
+.act.on{font-weight:700}
+.act.on.g{border-color:var(--grn);color:var(--grn);background:var(--gbg)}
+.act.on.a{border-color:var(--amb);color:var(--amb);background:var(--abg)}
+.act.on.r{border-color:var(--red);color:var(--red);background:var(--rbg)}
+.act.on.b{border-color:var(--blu);color:var(--blu);background:var(--bbg)}
+.note{margin-top:6px;width:100%;min-height:32px;border:1px solid var(--ln);border-radius:9px;padding:6px 9px;font:13px inherit;resize:vertical}
+.foot{color:var(--mt);font-size:13px;margin-top:18px}
+.hidden{display:none!important}
+@media(max-width:700px){.bar{flex-direction:column}.stats{grid-template-columns:1fr 1fr}.cmp{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="importScreen" class="import-wrap">
+  <h1>书签审核工具</h1>
+  <p class="desc">导入两份书签文件进行双向对比审核。支持 Netscape 书签 HTML 和 BookmarkHub JSON，自动识别。独有书签可保留、同步到对侧或删除；共同差异可选用 A 或 B 的版本。</p>
+  <div class="drop-zone" id="dropA">
+    <h3>A 书签</h3>
+    <p>拖放或点击选择（HTML / JSON）</p>
+    <div class="fname" id="nameA"></div>
+    <input type="file" accept=".html,.htm,.json" hidden id="fileA">
+  </div>
+  <div class="drop-zone" id="dropB">
+    <h3>B 书签</h3>
+    <p>拖放或点击选择（HTML / JSON）</p>
+    <div class="fname" id="nameB"></div>
+    <input type="file" accept=".html,.htm,.json" hidden id="fileB">
+  </div>
+  <button class="go-btn" id="goBtn" disabled>开始对比审核</button>
+</div>
+
+<div id="reviewScreen" class="hidden">
+<header>
+  <div class="hdr">
+    <h1 class="rev">书签审核工具</h1>
+    <p class="sub" id="subInfo"></p>
+    <div class="bar">
+      <input id="q" placeholder="搜索标题、URL、目录、域名…">
+      <select id="fType">
+        <option value="all">全部类型</option>
+        <option value="b_only">仅 B 独有</option>
+        <option value="a_only">仅 A 独有</option>
+        <option value="diff">仅共同差异</option>
+      </select>
+      <select id="fStatus">
+        <option value="all">全部状态</option>
+        <option value="todo">未处理</option>
+        <option value="done">已决策</option>
+      </select>
+      <select id="exportType">
+        <option value="decisions">决策 JSON</option>
+        <option value="a_all">A 侧 · 三种格式</option>
+        <option value="b_all">B 侧 · 三种格式</option>
+        <option value="both_all">两侧 · 全部六个文件</option>
+        <option value="a_edge">A · Edge/Chrome HTML</option>
+        <option value="a_safari">A · Safari HTML</option>
+        <option value="a_json">A · 树形 JSON</option>
+        <option value="b_edge">B · Edge/Chrome HTML</option>
+        <option value="b_safari">B · Safari HTML</option>
+        <option value="b_json">B · 树形 JSON</option>
+      </select>
+      <button class="pri" id="btnExport">导出</button>
+      <button id="btnBack">重新导入</button>
+    </div>
+  </div>
+</header>
+<main>
+  <section class="stats" id="stats"></section>
+  <section class="batch">
+    <button id="bKeep">全部保留</button>
+    <button id="bDel">全部删除</button>
+    <button id="bSync">独有 → 同步到对侧</button>
+    <button id="bReset">重置当前</button>
+  </section>
+  <section class="list" id="list"></section>
+  <p class="foot">审核完成后选择导出格式：决策 JSON、Edge/Chrome HTML、Safari HTML、或树形 JSON。</p>
+</main>
+</div>
+
+<script>
+const ROOT=new Set(['个人收藏','收藏夹栏','Favorites Bar','Bookmarks Bar','书签栏','其他书签','Other Bookmarks']);
+const SKIP_TOP=new Set(['小书签栏']);
+
+function parseHTML(text){
+  const bm=[],stack=[];let pf=null;
+  for(const line of text.split('\n')){
+    const low=line.toLowerCase();
+    if(low.includes('<h3')){const m=line.match(/<H3[^>]*>(.*?)<\/H3>/i);pf=m?ent(m[1]).trim():'Untitled'}
+    else if(low.includes('<a ')){
+      const hm=line.match(/HREF="([^"]*)"/i),tm=line.match(/<A[^>]*>(.*?)<\/A>/i);
+      const url=hm?ent(hm[1]):'',title=tm?ent(tm[1]).trim():'Untitled';
+      const parts=stack.filter(p=>!ROOT.has(p));
+      bm.push({title,url,rawParts:[...stack],pathParts:[...parts],path:parts.join(' / ')||'(根目录)'});
+    }else if(/<dl/i.test(low)){if(pf!==null){stack.push(pf);pf=null}}
+    else if(/<\/dl/i.test(low)){if(stack.length)stack.pop();pf=null}
+  }
+  return bm;
+}
+function parseJSON(text){
+  const data=JSON.parse(text),nodes=data.nodes||data.bookmarks||(Array.isArray(data)?data:[]),bm=[];
+  function walk(n,ps){
+    const t=n.title||n.name||'Untitled';
+    if(Array.isArray(n.children)){const cp=ROOT.has(t)?ps:[...ps,t];for(const c of n.children)walk(c,cp)}
+    else if(n.url){const fp=ps.filter(p=>!ROOT.has(p));bm.push({title:t,url:n.url,rawParts:[...ps],pathParts:[...fp],path:fp.join(' / ')||'(根目录)'})}
+  }
+  for(const n of nodes)walk(n,[]);return bm;
+}
+function ent(s){const el=document.createElement('textarea');el.innerHTML=s;return el.value}
+function autoParse(text){const t=text.trim();if(t[0]==='{'||t[0]==='[')return{bm:parseJSON(t),fmt:'JSON'};return{bm:parseHTML(text),fmt:'HTML'}}
+
+function decRep(s){let c=s.trim();for(let i=0;i<3;i++){try{const d=decodeURIComponent(c);if(d===c)break;c=d}catch{break}}return c}
+function norm(url){
+  url=(url||'').trim();
+  if(url.startsWith('javascript:')||url.startsWith('data:'))return url.slice(0,80);
+  try{const u=new URL(url);let p=decRep(u.pathname);if(p!=='/'&&p.endsWith('/'))p=p.replace(/\/+$/,'');const q=decRep(u.search.replace(/^\?/,''));return u.protocol+'//'+u.host.toLowerCase()+p+(q?'?'+q:'')}
+  catch{return decRep(url)}
+}
+function getDom(url){try{return new URL(url).host.toLowerCase()}catch{return''}}
+
+function buildItems(aBm,bBm){
+  const aM=new Map(),bM=new Map();
+  for(const b of aBm){if(b.url.startsWith('javascript:')||SKIP_TOP.has(b.pathParts[0]))continue;const n=norm(b.url);if(!aM.has(n))aM.set(n,[]);aM.get(n).push(b)}
+  for(const b of bBm){if(b.url.startsWith('javascript:')||SKIP_TOP.has(b.pathParts[0]))continue;const n=norm(b.url);if(!bM.has(n))bM.set(n,[]);bM.get(n).push(b)}
+  const items=[];let bi=0,ai=0,di=0;
+  for(const[n,es]of bM){
+    if(aM.has(n))continue;bi++;const e=es[0];
+    items.push({id:'b-'+bi,type:'b_only',defaultAction:'keep',
+      title:e.title,url:e.url,normUrl:n,domain:getDom(e.url),
+      inA:null,inB:{entries:es.map(x=>({title:x.title,path:x.path})),best:e},
+      pathParts:e.pathParts,path:e.path,sourceCount:es.length});
+  }
+  for(const[n,es]of aM){
+    if(bM.has(n))continue;ai++;const e=es[0];
+    items.push({id:'a-'+ai,type:'a_only',defaultAction:'keep',
+      title:e.title,url:e.url,normUrl:n,domain:getDom(e.url),
+      inA:{entries:es.map(x=>({title:x.title,path:x.path})),best:e},inB:null,
+      pathParts:e.pathParts,path:e.path,sourceCount:es.length});
+  }
+  for(const[n,aEs]of aM){
+    if(!bM.has(n))continue;const bEs=bM.get(n);
+    const at=new Set(aEs.map(e=>e.title)),bt=new Set(bEs.map(e=>e.title)),ap=new Set(aEs.map(e=>e.path)),bp=new Set(bEs.map(e=>e.path));
+    if(seq(at,bt)&&seq(ap,bp))continue;di++;
+    items.push({id:'d-'+di,type:'diff',defaultAction:'keep',
+      url:aEs[0].url,normUrl:n,domain:getDom(aEs[0].url),
+      inA:{titles:[...at].sort(),paths:[...ap].sort(),entries:aEs.map(e=>({title:e.title,path:e.path})),best:aEs[0]},
+      inB:{titles:[...bt].sort(),paths:[...bp].sort(),entries:bEs.map(e=>({title:e.title,path:e.path})),best:bEs[0]}});
+  }
+  return items;
+}
+function seq(a,b){if(a.size!==b.size)return false;for(const v of a)if(!b.has(v))return false;return true}
+
+/* ===== state ===== */
+let DATA=null,state=null;
+
+/* ===== import ===== */
+const dropA=document.getElementById('dropA'),dropB=document.getElementById('dropB');
+const fileA=document.getElementById('fileA'),fileB=document.getElementById('fileB');
+const nA=document.getElementById('nameA'),nB=document.getElementById('nameB');
+const goBtn=document.getElementById('goBtn');
+let rawA=null,rawB=null,fnA='',fnB='';
+
+function setupDrop(zone,inp,side){
+  zone.onclick=()=>inp.click();
+  zone.ondragover=e=>{e.preventDefault();zone.classList.add('over')};
+  zone.ondragleave=()=>zone.classList.remove('over');
+  zone.ondrop=e=>{e.preventDefault();zone.classList.remove('over');if(e.dataTransfer.files[0])rd(e.dataTransfer.files[0],side)};
+  inp.onchange=()=>{if(inp.files[0])rd(inp.files[0],side)};
+}
+function rd(file,side){
+  const r=new FileReader();
+  r.onload=()=>{if(side==='a'){rawA=r.result;fnA=file.name;nA.textContent=file.name}else{rawB=r.result;fnB=file.name;nB.textContent=file.name};goBtn.disabled=!(rawA&&rawB)};
+  r.readAsText(file,'utf-8');
+}
+setupDrop(dropA,fileA,'a');setupDrop(dropB,fileB,'b');
+
+goBtn.onclick=()=>{
+  try{
+    const a=autoParse(rawA),b=autoParse(rawB),items=buildItems(a.bm,b.bm);
+    DATA={nameA:fnA,nameB:fnB,fmtA:a.fmt,fmtB:b.fmt,cntA:a.bm.length,cntB:b.bm.length,items,
+      allA:a.bm,allB:b.bm,
+      summary:{bOnly:items.filter(i=>i.type==='b_only').length,aOnly:items.filter(i=>i.type==='a_only').length,diff:items.filter(i=>i.type==='diff').length,total:items.length}};
+    state=new Map(items.map(it=>[it.id,{action:it.defaultAction,note:''}]));
+    document.getElementById('importScreen').classList.add('hidden');
+    document.getElementById('reviewScreen').classList.remove('hidden');
+    document.getElementById('subInfo').textContent=
+      `A: ${DATA.nameA} (${DATA.fmtA}, ${DATA.cntA} 条)  ｜  B: ${DATA.nameB} (${DATA.fmtB}, ${DATA.cntB} 条)  ｜  已排除 小书签栏 和 javascript:`;
+    render();
+  }catch(e){alert('解析失败：'+e.message)}
+};
+document.getElementById('btnBack').onclick=()=>{
+  document.getElementById('reviewScreen').classList.add('hidden');
+  document.getElementById('importScreen').classList.remove('hidden');
+};
+
+/* ===== review ===== */
+const $l=document.getElementById('list'),$q=document.getElementById('q'),$ft=document.getElementById('fType'),$fs=document.getElementById('fStatus');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function tof(it){return[it.title,it.url,it.path,it.domain,it.type,JSON.stringify(it.inA||''),JSON.stringify(it.inB||'')].join(' ').toLowerCase()}
+function vis(it){
+  const q=$q.value.trim().toLowerCase();
+  if(q&&!tof(it).includes(q))return false;
+  if($ft.value!=='all'&&it.type!==$ft.value)return false;
+  const ch=state.get(it.id).action!==it.defaultAction;
+  if($fs.value==='todo'&&ch)return false;
+  if($fs.value==='done'&&!ch)return false;
+  return true;
+}
+
+function renderStats(n){
+  const vs=[...state.values()];
+  const keep=vs.filter(v=>v.action==='keep').length;
+  const del=vs.filter(v=>v.action==='delete').length;
+  const changed=vs.filter(v=>v.action!=='keep'&&v.action!=='delete').length;
+  document.getElementById('stats').innerHTML=
+    `<div class="stat"><b>${DATA.summary.bOnly}</b><span>B 独有</span></div>`+
+    `<div class="stat"><b>${DATA.summary.aOnly}</b><span>A 独有</span></div>`+
+    `<div class="stat"><b>${DATA.summary.diff}</b><span>共同差异</span></div>`+
+    `<div class="stat"><b>${keep}</b><span>保留</span></div>`+
+    `<div class="stat"><b>${changed}</b><span>已变更</span></div>`+
+    `<div class="stat"><b>${del}</b><span>删除</span></div>`+
+    `<div class="stat"><b>${n}</b><span>当前显示</span></div>`;
+}
+
+function tagOf(t){
+  if(t==='b_only')return'<span class="tag hub">B 独有</span>';
+  if(t==='a_only')return'<span class="tag saf">A 独有</span>';
+  return'<span class="tag dif">共同差异</span>';
+}
+
+function actBtns(type,s){
+  if(type==='a_only') return `<div class="acts">`+
+    `<button class="act g ${s==='keep'?'on':''}" data-a="keep">保留</button>`+
+    `<button class="act b ${s==='to_b'?'on':''}" data-a="to_b">→ B</button>`+
+    `<button class="act r ${s==='delete'?'on':''}" data-a="delete">删除</button></div>`;
+  if(type==='b_only') return `<div class="acts">`+
+    `<button class="act g ${s==='keep'?'on':''}" data-a="keep">保留</button>`+
+    `<button class="act b ${s==='to_a'?'on':''}" data-a="to_a">→ A</button>`+
+    `<button class="act r ${s==='delete'?'on':''}" data-a="delete">删除</button></div>`;
+  return `<div class="acts">`+
+    `<button class="act g ${s==='keep'?'on':''}" data-a="keep">保留各自</button>`+
+    `<button class="act a ${s==='use_a'?'on':''}" data-a="use_a">用 A</button>`+
+    `<button class="act b ${s==='use_b'?'on':''}" data-a="use_b">用 B</button>`+
+    `<button class="act r ${s==='delete'?'on':''}" data-a="delete">删除</button></div>`;
+}
+
+function mkCard(it){
+  const s=state.get(it.id),c=document.createElement('article');
+  c.className='card';c.dataset.id=it.id;
+
+  if(it.type==='b_only'){
+    c.innerHTML=
+      `<div class="card-top"><div>`+
+        `<div class="title">${esc(it.title)}</div>`+
+        `<div class="url"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url)}</a></div>`+
+        `<div class="path">B 目录：${esc(it.path)}</div>`+
+      `</div>${tagOf(it.type)}</div>`+
+      `<div class="meta"><span class="chip">${esc(it.domain)}</span><span class="chip">B 中 ${it.sourceCount} 条</span></div>`+
+      actBtns(it.type,s.action)+
+      `<textarea class="note" placeholder="备注">${esc(s.note)}</textarea>`;
+  }else if(it.type==='a_only'){
+    c.innerHTML=
+      `<div class="card-top"><div>`+
+        `<div class="title">${esc(it.title)}</div>`+
+        `<div class="url"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url)}</a></div>`+
+        `<div class="path">A 目录：${esc(it.path)}</div>`+
+      `</div>${tagOf(it.type)}</div>`+
+      `<div class="meta"><span class="chip">${esc(it.domain)}</span><span class="chip">A 中 ${it.sourceCount} 条</span></div>`+
+      actBtns(it.type,s.action)+
+      `<textarea class="note" placeholder="备注">${esc(s.note)}</textarea>`;
+  }else{
+    const sa=it.inA,sb=it.inB;
+    c.innerHTML=
+      `<div class="card-top"><div>`+
+        `<div class="title">URL 相同，标题或目录不同</div>`+
+        `<div class="url"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.url)}</a></div>`+
+      `</div>${tagOf(it.type)}</div>`+
+      `<div class="cmp">`+
+        `<div class="pnl"><h3>A</h3><p>标题：${esc(sa.titles.join(' | '))}</p><p>目录：${esc(sa.paths.join(' | '))}</p></div>`+
+        `<div class="pnl"><h3>B</h3><p>标题：${esc(sb.titles.join(' | '))}</p><p>目录：${esc(sb.paths.join(' | '))}</p></div>`+
+      `</div>`+
+      actBtns(it.type,s.action)+
+      `<textarea class="note" placeholder="备注">${esc(s.note)}</textarea>`;
+  }
+  return c;
+}
+
+function render(){
+  $l.innerHTML='';const v=DATA.items.filter(vis);renderStats(v.length);
+  const f=document.createDocumentFragment();for(const it of v)f.appendChild(mkCard(it));$l.appendChild(f);
+}
+
+$l.addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b)return;state.get(b.closest('.card').dataset.id).action=b.dataset.a;render()});
+$l.addEventListener('input',e=>{if(!e.target.classList.contains('note'))return;state.get(e.target.closest('.card').dataset.id).note=e.target.value});
+[$q,$ft,$fs].forEach(el=>el.addEventListener('input',render));
+
+function apV(fn){for(const it of DATA.items.filter(vis))fn(it,state.get(it.id));render()}
+document.getElementById('bKeep').onclick=()=>apV((_,s)=>{s.action='keep'});
+document.getElementById('bDel').onclick=()=>apV((_,s)=>{s.action='delete'});
+document.getElementById('bSync').onclick=()=>apV((it,s)=>{if(it.type==='a_only')s.action='to_b';else if(it.type==='b_only')s.action='to_a'});
+document.getElementById('bReset').onclick=()=>apV((it,s)=>{s.action=it.defaultAction;s.note=''});
+
+function buildTree(entries,useRaw){
+  const root={title:'__ROOT__',children:[]};
+  for(const e of entries){
+    let cur=root;
+    const parts=useRaw&&e.rawParts?e.rawParts:e.pathParts||[];
+    for(const part of parts){
+      let found=cur.children.find(c=>c.children&&c.title===part);
+      if(!found){found={title:part,children:[]};cur.children.push(found)}
+      cur=found;
+    }
+    cur.children.push({title:e.title,url:e.url});
+  }
+  return root;
+}
+function serializeTree(root){
+  // legacy helper kept for backward compatibility; emits Safari variant.
+  return serializeHtmlSafari(root);
+}
+
+const FAV_NAMES=new Set(['个人收藏','收藏夹栏','Bookmarks Bar','Bookmarks bar','Favorites','Favourites']);
+
+function _escA(s){return String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function _escT(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function _nowSec(){return Math.floor(Date.now()/1000)}
+
+function _writeHtml(root,variant){
+  const now=_nowSec();
+  let favoritesSeen=false;
+  const L=['<!DOCTYPE NETSCAPE-Bookmark-file-1>'];
+  if(variant==='safari') L.push('<HTML>');
+  L.push('<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">');
+  L.push('<TITLE>Bookmarks</TITLE>');
+  L.push('<H1>Bookmarks</H1>');
+  L.push('<DL><p>');
+  function walk(node,depth){
+    const tab='    '.repeat(depth);
+    if(node.children){
+      const addDate=node.addDate||now;
+      const lastMod=node.lastModified||addDate;
+      let mark=false;
+      if(variant==='chromium'&&!favoritesSeen&&depth===1&&FAV_NAMES.has((node.title||'').trim())){
+        mark=true;favoritesSeen=true;
+      }
+      let attrs=`ADD_DATE="${addDate}" LAST_MODIFIED="${lastMod}"`;
+      if(mark) attrs+=' PERSONAL_TOOLBAR_FOLDER="true"';
+      L.push(`${tab}<DT><H3 ${attrs}>${_escT(node.title||'')}</H3>`);
+      L.push(`${tab}<DL><p>`);
+      for(const c of node.children) walk(c,depth+1);
+      L.push(`${tab}</DL><p>`);
+    }else if(node.url){
+      const addDate=node.addDate||now;
+      let parts=`HREF="${_escA(node.url)}" ADD_DATE="${addDate}"`;
+      if(node.lastModified&&node.lastModified!==addDate){
+        parts+=` LAST_MODIFIED="${node.lastModified}"`;
+      }
+      L.push(`${tab}<DT><A ${parts}>${_escT(node.title||'')}</A>`);
+    }
+  }
+  for(const c of root.children) walk(c,1);
+  L.push('</DL><p>');
+  if(variant==='safari') L.push('</HTML>');
+  return L.join('\n')+'\n';
+}
+
+function serializeHtmlChromium(root){return _writeHtml(root,'chromium')}
+function serializeHtmlSafari(root){return _writeHtml(root,'safari')}
+
+function serializeTreeJson(root){
+  let favoritesSeen=false;
+  function nodeToObj(node,depth){
+    if(node.children){
+      const obj={type:'folder',title:node.title||''};
+      if(depth===1&&!favoritesSeen&&FAV_NAMES.has((node.title||'').trim())){
+        obj.isFavoritesBar=true;favoritesSeen=true;
+      }
+      if(node.addDate) obj.addDate=node.addDate;
+      if(node.lastModified&&node.lastModified!==node.addDate) obj.lastModified=node.lastModified;
+      obj.children=node.children.map(c=>nodeToObj(c,depth+1));
+      return obj;
+    }
+    const obj={type:'bookmark',title:node.title||'',url:node.url||''};
+    if(node.addDate) obj.addDate=node.addDate;
+    if(node.lastModified&&node.lastModified!==node.addDate) obj.lastModified=node.lastModified;
+    return obj;
+  }
+  const payload={
+    schema:'bookmark-tree/v1',
+    generatedAt:new Date().toISOString().replace(/\.\d{3}Z$/,'Z'),
+    title:'Bookmarks',
+    tree:root.children.map(c=>nodeToObj(c,1)),
+  };
+  return JSON.stringify(payload,null,2)+'\n';
+}
+
+function collectSide(side){
+  const mine=side==='a'?DATA.allA:DATA.allB;
+  const myOnly=side==='a'?'a_only':'b_only';
+  const otherOnly=side==='a'?'b_only':'a_only';
+  const toMe=side==='a'?'to_a':'to_b';
+  const useOther=side==='a'?'use_b':'use_a';
+
+  const removed=new Set();
+  const added=[];
+
+  for(const it of DATA.items){
+    const act=state.get(it.id).action;
+
+    if(it.type===myOnly){
+      if(act==='delete') removed.add(it.normUrl);
+    }
+
+    if(it.type===otherOnly && act===toMe){
+      const src=side==='a'?it.inB:it.inA;
+      if(src){
+        const e=src.best||src.entries[0];
+        added.push({title:e.title,url:it.url,rawParts:e.rawParts||e.pathParts||[],pathParts:e.pathParts||[]});
+      }
+    }
+
+    if(it.type==='diff'){
+      if(act==='delete'){
+        removed.add(it.normUrl);
+      }else if(act===useOther){
+        removed.add(it.normUrl);
+        const otherInfo=side==='a'?it.inB:it.inA;
+        if(otherInfo){
+          const e=otherInfo.best||otherInfo.entries[0];
+          added.push({title:e.title,url:it.url,rawParts:e.rawParts||e.pathParts||[],pathParts:e.pathParts||[]});
+        }
+      }
+    }
+  }
+
+  const addedNorms=new Set(added.map(e=>norm(e.url)));
+  const result=[];
+  for(const b of mine){
+    if(SKIP_TOP.has((b.pathParts||[])[0]))continue;
+    const n=norm(b.url);
+    if(removed.has(n))continue;
+    if(addedNorms.has(n))continue;
+    result.push(b);
+  }
+  result.push(...added);
+  return result;
+}
+
+function dlFile(content,name,type){
+  const blob=new Blob([content],{type});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+}
+
+document.getElementById('btnExport').onclick=()=>{
+  const fmt=document.getElementById('exportType').value;
+
+  if(fmt==='decisions'){
+    const decisions=DATA.items.map(it=>({id:it.id,type:it.type,action:state.get(it.id).action,note:state.get(it.id).note,item:it}));
+    const payload={version:3,exportedAt:new Date().toISOString(),sourceFiles:{a:DATA.nameA,b:DATA.nameB},summary:DATA.summary,decisions};
+    dlFile(JSON.stringify(payload,null,2),'bookmark-review-decisions.json','application/json;charset=utf-8');
+    return;
+  }
+
+  function exportSide(side,which){
+    const entries=collectSide(side);
+    const tree=buildTree(entries,true);
+    const label=side==='a'?'A':'B';
+    const base=`bookmarks-${label}-merged`;
+    const tasks=[];
+    if(which==='edge'||which==='all') tasks.push(['edge-chrome.html', serializeHtmlChromium(tree), 'text/html;charset=utf-8']);
+    if(which==='safari'||which==='all') tasks.push(['safari.html',      serializeHtmlSafari(tree),   'text/html;charset=utf-8']);
+    if(which==='json'||which==='all')   tasks.push(['tree.json',         serializeTreeJson(tree),     'application/json;charset=utf-8']);
+    let delay=0;
+    for(const [suffix,content,mime] of tasks){
+      setTimeout(()=>dlFile(content,`${base}.${suffix}`,mime),delay);
+      delay+=250;
+    }
+  }
+
+  if(fmt==='a_all'){exportSide('a','all');return}
+  if(fmt==='b_all'){exportSide('b','all');return}
+  if(fmt==='both_all'){exportSide('a','all');setTimeout(()=>exportSide('b','all'),900);return}
+
+  const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json']};
+  const sel=mapping[fmt];
+  if(sel) exportSide(sel[0],sel[1]);
+};
+</script>
+</body>
+</html>

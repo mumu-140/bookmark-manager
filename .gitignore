@@ -1,0 +1,10 @@
+*.html
+!书签审核工具.html
+*.zip
+*.xlsx
+*.json
+!package.json
+.DS_Store
+.codegraph/
+.claude/
+__pycache__/
