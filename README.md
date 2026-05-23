@@ -109,19 +109,25 @@
 
 1. **Fork 本仓库**（同方案 A 第 1 步）
 
-2. **打开 fork 后仓库的 Settings → Pages**
+2. **开启 fork 仓库的 Actions（重要，新手常踩坑）**
+   - GitHub 出于安全考虑，fork 来的仓库默认会**禁用 workflow**
+   - 在 fork 后的仓库页面点顶部 **Actions** 标签
+   - 看到提示 "Workflows aren't being run on this forked repository" → 点蓝色按钮 **I understand my workflows, go ahead and enable them**
+   - 启用后才能继续后面的部署步骤
+
+3. **打开 fork 后仓库的 Settings → Pages**
    - URL：`https://github.com/<你的用户名>/bookmark-manager/settings/pages`
 
-3. **在 "Build and deployment" → "Source" 下拉里选 `GitHub Actions`**
+4. **在 "Build and deployment" → "Source" 下拉里选 `GitHub Actions`**
    - 这告诉 GitHub Pages 用 Actions workflow 来构建和部署
    - 不要选 `Deploy from a branch`（那是另一种更老的部署模式）
 
-4. **触发首次部署**
-   - 方法 1：在仓库页面顶部点 **Actions** 标签 → 左侧选 **Deploy to GitHub Pages** workflow → 右上角 **Run workflow** → **Run workflow**（确认运行）
+5. **触发首次部署**
+   - 方法 1：在仓库页面顶部点 **Actions** 标签 → 左侧选 **Deploy to GitHub Pages** workflow → 右上角 **Run workflow** → 在弹出的小窗里 **Run workflow**（确认运行）
    - 方法 2：在本地随便改个文件然后 `git push`，workflow 会被 push 事件自动触发
    - 等约 1 分钟，Actions 页面看到绿色 ✓ 即部署完成
 
-5. **拿到部署 URL**
+6. **拿到部署 URL**
    - 回到 **Settings → Pages**，页面顶部会显示 `Your site is live at https://<你的用户名>.github.io/bookmark-manager/`
    - 打开即用
 
