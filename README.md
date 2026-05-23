@@ -6,7 +6,7 @@
 
 ### 审核工具（主入口）
 
-用浏览器打开 `书签审核工具.html`，无需安装任何依赖。
+用浏览器打开 `index.html`，无需安装任何依赖。也可访问在线版本（部署后填入实际 URL）。
 
 1. 分别导入 A、B 两份书签文件（支持 Netscape HTML 和 BookmarkHub JSON，自动识别）
 2. 工具自动解析、归一化 URL、对比差异，生成三类审核项：
@@ -109,7 +109,7 @@ python3 scripts/apply_bookmark_review_decisions.py \
 
 ## 前端导出选项
 
-`书签审核工具.html` 的导出下拉菜单：
+`index.html` 的导出下拉菜单：
 
 | 选项 | 输出文件 |
 |------|---------|
@@ -122,7 +122,7 @@ python3 scripts/apply_bookmark_review_decisions.py \
 ## 目录结构
 
 ```
-书签审核工具.html              ← 主入口，纯前端，打开即用
+index.html                    ← 主入口，纯前端，打开即用
 scripts/
   bookmark_writers.py                       ← 共享：Node 类 + 三种 writer + Netscape HTML 解析
   convert_bookmarkhub_to_bookmarks_html.py  ← BookmarkHub JSON 转三种规范化格式
