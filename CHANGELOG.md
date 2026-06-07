@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **对比模式新增"原始文件导出"选项**
+  - 用户反馈：不做任何审核修改，想直接导出/上传 A 或 B 的完整内容
+  - 新增选项组"原始文件（未经审核）"，包含 A/B 四种格式各自的原始导出
+  - 导出文件名标记为 `bookmarks-{A|B}-original.*`
+  - 支持下载和上传到 Gist
+  - 与"审核后的合并结果"选项清晰分组，避免混淆
+
 ### Fixed
 - **重要修复**：BookmarkHub.txt 格式与 Safari 官方保持一致
   - 修正为双顶层节点结构：`ToolbarFolder` (bookmarks-bar) + `其他收藏夹` (other)

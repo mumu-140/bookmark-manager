@@ -181,17 +181,29 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
       </select>
       <select id="exportType">
         <option value="decisions">决策 JSON</option>
-        <option value="a_all">A 侧 · 三种格式</option>
-        <option value="b_all">B 侧 · 三种格式</option>
-        <option value="both_all">两侧 · 全部六个文件</option>
-        <option value="a_edge">A · Edge/Chrome HTML</option>
-        <option value="a_safari">A · Safari HTML</option>
-        <option value="a_json">A · 树形 JSON</option>
-        <option value="a_bookmarkhub">A · BookmarkHub.txt</option>
-        <option value="b_edge">B · Edge/Chrome HTML</option>
-        <option value="b_safari">B · Safari HTML</option>
-        <option value="b_json">B · 树形 JSON</option>
-        <option value="b_bookmarkhub">B · BookmarkHub.txt</option>
+        <optgroup label="─── 审核后的合并结果 ───">
+          <option value="a_all">A 侧 · 三种格式</option>
+          <option value="b_all">B 侧 · 三种格式</option>
+          <option value="both_all">两侧 · 全部六个文件</option>
+          <option value="a_edge">A · Edge/Chrome HTML</option>
+          <option value="a_safari">A · Safari HTML</option>
+          <option value="a_json">A · 树形 JSON</option>
+          <option value="a_bookmarkhub">A · BookmarkHub.txt</option>
+          <option value="b_edge">B · Edge/Chrome HTML</option>
+          <option value="b_safari">B · Safari HTML</option>
+          <option value="b_json">B · 树形 JSON</option>
+          <option value="b_bookmarkhub">B · BookmarkHub.txt</option>
+        </optgroup>
+        <optgroup label="─── 原始文件（未经审核）───">
+          <option value="raw_a_edge">A 原始 · Edge/Chrome HTML</option>
+          <option value="raw_a_safari">A 原始 · Safari HTML</option>
+          <option value="raw_a_json">A 原始 · 树形 JSON</option>
+          <option value="raw_a_bookmarkhub">A 原始 · BookmarkHub.txt</option>
+          <option value="raw_b_edge">B 原始 · Edge/Chrome HTML</option>
+          <option value="raw_b_safari">B 原始 · Safari HTML</option>
+          <option value="raw_b_json">B 原始 · 树形 JSON</option>
+          <option value="raw_b_bookmarkhub">B 原始 · BookmarkHub.txt</option>
+        </optgroup>
       </select>
       <button class="pri" id="btnExport">导出</button>
       <button id="btnGist" title="上传到 GitHub Gist（需要 Token）">📤 Gist</button>
@@ -209,6 +221,7 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
   </section>
   <section class="list" id="list"></section>
   <p class="foot">审核完成后选择导出格式：决策 JSON、Edge/Chrome HTML、Safari HTML、树形 JSON 或 BookmarkHub.txt。<br>
+  <strong>审核后的合并结果</strong>：根据你的操作（删除/同步/保留）生成最终书签。<strong>原始文件（未经审核）</strong>：直接导出 A 或 B 的完整内容，不包含任何修改。<br>
   点击 📤 Gist 可直接上传到 GitHub Gist（需要 Personal Access Token，权限: gist）。<span id="tokenStatus"></span></p>
 </main>
 </div>
@@ -662,13 +675,43 @@ document.getElementById('btnExport').onclick=()=>{
     }
   }
 
+  function exportRaw(side,which){
+    const entries=side==='a'?DATA.allA:DATA.allB;
+    const tree=buildTree(entries,true);
+    const label=side==='a'?'A':'B';
+    const base=`bookmarks-${label}-original`;
+    let content,filename,mime;
+    if(which==='edge'){
+      content=serializeHtmlChromium(tree);
+      filename=`${base}.edge-chrome.html`;
+      mime='text/html;charset=utf-8';
+    }else if(which==='safari'){
+      content=serializeHtmlSafari(tree);
+      filename=`${base}.safari.html`;
+      mime='text/html;charset=utf-8';
+    }else if(which==='json'){
+      content=serializeTreeJson(tree);
+      filename=`${base}.tree.json`;
+      mime='application/json;charset=utf-8';
+    }else if(which==='bookmarkhub'){
+      content=serializeBookmarkHub(tree);
+      filename=`${base}.BookmarkHub.txt`;
+      mime='text/plain;charset=utf-8';
+    }
+    dlFile(content,filename,mime);
+  }
+
   if(fmt==='a_all'){exportSide('a','all');return}
   if(fmt==='b_all'){exportSide('b','all');return}
   if(fmt==='both_all'){exportSide('a','all');setTimeout(()=>exportSide('b','all'),900);return}
 
   const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],a_bookmarkhub:['a','bookmarkhub'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json'],b_bookmarkhub:['b','bookmarkhub']};
   const sel=mapping[fmt];
-  if(sel) exportSide(sel[0],sel[1]);
+  if(sel){exportSide(sel[0],sel[1]);return}
+
+  const rawMapping={raw_a_edge:['a','edge'],raw_a_safari:['a','safari'],raw_a_json:['a','json'],raw_a_bookmarkhub:['a','bookmarkhub'],raw_b_edge:['b','edge'],raw_b_safari:['b','safari'],raw_b_json:['b','json'],raw_b_bookmarkhub:['b','bookmarkhub']};
+  const rawSel=rawMapping[fmt];
+  if(rawSel){exportRaw(rawSel[0],rawSel[1]);return}
 };
 
 /* ===== 共享 Gist 上传：格式检查 + 覆盖询问 ===== */
@@ -794,17 +837,29 @@ document.getElementById('btnGist').onclick=async()=>{
     return;
   }
 
+  // 审核后的合并结果
   const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],a_bookmarkhub:['a','bookmarkhub'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json'],b_bookmarkhub:['b','bookmarkhub']};
   const sel=mapping[fmt];
-  if(!sel){
-    alert('请选择具体的单个格式（不支持"全部"选项）');
+  if(sel){
+    const entries=collectSide(sel[0]);
+    const tree=buildTree(entries,true);
+    const p=buildExportPayload(tree,sel[1]);
+    await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
     return;
   }
 
-  const entries=collectSide(sel[0]);
-  const tree=buildTree(entries,true);
-  const p=buildExportPayload(tree,sel[1]);
-  await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
+  // 原始未审核文件
+  const rawMapping={raw_a_edge:['a','edge'],raw_a_safari:['a','safari'],raw_a_json:['a','json'],raw_a_bookmarkhub:['a','bookmarkhub'],raw_b_edge:['b','edge'],raw_b_safari:['b','safari'],raw_b_json:['b','json'],raw_b_bookmarkhub:['b','bookmarkhub']};
+  const rawSel=rawMapping[fmt];
+  if(rawSel){
+    const entries=rawSel[0]==='a'?DATA.allA:DATA.allB;
+    const tree=buildTree(entries,true);
+    const p=buildExportPayload(tree,rawSel[1]);
+    await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
+    return;
+  }
+
+  alert('请选择具体的单个格式（不支持"全部"选项）');
 };
 
 function updateTokenStatus(){
