@@ -116,11 +116,14 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
         <option value="a_edge">A · Edge/Chrome HTML</option>
         <option value="a_safari">A · Safari HTML</option>
         <option value="a_json">A · 树形 JSON</option>
+        <option value="a_bookmarkhub">A · BookmarkHub.txt</option>
         <option value="b_edge">B · Edge/Chrome HTML</option>
         <option value="b_safari">B · Safari HTML</option>
         <option value="b_json">B · 树形 JSON</option>
+        <option value="b_bookmarkhub">B · BookmarkHub.txt</option>
       </select>
       <button class="pri" id="btnExport">导出</button>
+      <button id="btnGist" title="上传到 GitHub Gist（需要 Token）">📤 Gist</button>
       <button id="btnBack">重新导入</button>
     </div>
   </div>
@@ -134,7 +137,8 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
     <button id="bReset">重置当前</button>
   </section>
   <section class="list" id="list"></section>
-  <p class="foot">审核完成后选择导出格式：决策 JSON、Edge/Chrome HTML、Safari HTML、或树形 JSON。</p>
+  <p class="foot">审核完成后选择导出格式：决策 JSON、Edge/Chrome HTML、Safari HTML、树形 JSON 或 BookmarkHub.txt。<br>
+  点击 📤 Gist 可直接上传到 GitHub Gist（需要 Personal Access Token，权限: gist）。<span id="tokenStatus"></span></p>
 </main>
 </div>
 
@@ -515,6 +519,68 @@ function dlFile(content,name,type){
   setTimeout(()=>URL.revokeObjectURL(a.href),60000);
 }
 
+function serializeBookmarkHub(tree){
+  const bookmarks=[];
+  function traverse(node,path=[]){
+    if(node.kind==='folder'){
+      const newPath=[...path,node.title];
+      for(const child of node.children) traverse(child,newPath);
+    }else if(node.kind==='bookmark'){
+      bookmarks.push({
+        syncing:true,
+        title:node.title,
+        url:node.url,
+        path:path.join('/')
+      });
+    }
+  }
+  for(const child of tree.children) traverse(child,[]);
+
+  const payload={
+    browser:"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
+    version:"0.0.6",
+    createDate:Date.now(),
+    bookmarks:[{children:convertToNestedStructure(bookmarks)}]
+  };
+  return JSON.stringify(payload);
+}
+
+function convertToNestedStructure(flatBookmarks){
+  const root={children:[]};
+  const folderMap=new Map();
+  folderMap.set('',root);
+
+  for(const bm of flatBookmarks){
+    const parts=bm.path?bm.path.split('/').filter(p=>p):[],parent=parts.slice(0,-1).join('/'),folderName=parts[parts.length-1]||'未分类';
+    let parentNode=folderMap.get(parent);
+    if(!parentNode){
+      parentNode=root;
+      if(parent){
+        const ancestorParts=parent.split('/').filter(p=>p);
+        for(let i=0;i<ancestorParts.length;i++){
+          const ancestorPath=ancestorParts.slice(0,i+1).join('/');
+          if(!folderMap.has(ancestorPath)){
+            const newFolder={title:ancestorParts[i],children:[]};
+            const ancestorParent=folderMap.get(ancestorParts.slice(0,i).join('/'))||root;
+            ancestorParent.children.push(newFolder);
+            folderMap.set(ancestorPath,newFolder);
+          }
+        }
+        parentNode=folderMap.get(parent);
+      }
+    }
+
+    let folder=folderMap.get(bm.path);
+    if(!folder){
+      folder={title:folderName,children:[]};
+      parentNode.children.push(folder);
+      folderMap.set(bm.path,folder);
+    }
+    folder.children.push({syncing:true,title:bm.title,url:bm.url});
+  }
+  return root.children;
+}
+
 document.getElementById('btnExport').onclick=()=>{
   const fmt=document.getElementById('exportType').value;
 
@@ -534,6 +600,7 @@ document.getElementById('btnExport').onclick=()=>{
     if(which==='edge'||which==='all') tasks.push(['edge-chrome.html', serializeHtmlChromium(tree), 'text/html;charset=utf-8']);
     if(which==='safari'||which==='all') tasks.push(['safari.html',      serializeHtmlSafari(tree),   'text/html;charset=utf-8']);
     if(which==='json'||which==='all')   tasks.push(['tree.json',         serializeTreeJson(tree),     'application/json;charset=utf-8']);
+    if(which==='bookmarkhub') tasks.push(['BookmarkHub.txt', serializeBookmarkHub(tree), 'text/plain;charset=utf-8']);
     let delay=0;
     for(const [suffix,content,mime] of tasks){
       setTimeout(()=>dlFile(content,`${base}.${suffix}`,mime),delay);
@@ -545,10 +612,125 @@ document.getElementById('btnExport').onclick=()=>{
   if(fmt==='b_all'){exportSide('b','all');return}
   if(fmt==='both_all'){exportSide('a','all');setTimeout(()=>exportSide('b','all'),900);return}
 
-  const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json']};
+  const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],a_bookmarkhub:['a','bookmarkhub'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json'],b_bookmarkhub:['b','bookmarkhub']};
   const sel=mapping[fmt];
   if(sel) exportSide(sel[0],sel[1]);
 };
+
+document.getElementById('btnGist').onclick=async()=>{
+  const token=localStorage.getItem('github_token');
+  if(!token){
+    const input=prompt('请输入你的 GitHub Personal Access Token\n\n权限需要: gist\n\n获取地址: https://github.com/settings/tokens/new\n\n（Token 会保存在浏览器 localStorage 中，仅本地使用）');
+    if(!input)return;
+    localStorage.setItem('github_token',input.trim());
+    alert('Token 已保存，请再次点击上传');
+    return;
+  }
+
+  const fmt=document.getElementById('exportType').value;
+  if(fmt==='decisions'){
+    alert('请选择书签格式（A/B 侧），决策 JSON 不支持上传到 Gist');
+    return;
+  }
+
+  let side,which;
+  const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],a_bookmarkhub:['a','bookmarkhub'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json'],b_bookmarkhub:['b','bookmarkhub']};
+  const sel=mapping[fmt];
+  if(sel){
+    side=sel[0];
+    which=sel[1];
+  }else{
+    alert('请选择具体的单个格式（不支持"全部"选项）');
+    return;
+  }
+
+  const entries=collectSide(side);
+  const tree=buildTree(entries,true);
+  let content,filename,description;
+
+  if(which==='edge'){
+    content=serializeHtmlChromium(tree);
+    filename='bookmarks.edge-chrome.html';
+    description='Bookmarks exported for Edge/Chrome';
+  }else if(which==='safari'){
+    content=serializeHtmlSafari(tree);
+    filename='bookmarks.safari.html';
+    description='Bookmarks exported for Safari';
+  }else if(which==='json'){
+    content=serializeTreeJson(tree);
+    filename='bookmarks.tree.json';
+    description='Bookmarks in tree JSON format';
+  }else if(which==='bookmarkhub'){
+    content=serializeBookmarkHub(tree);
+    filename='BookmarkHub.txt';
+    description='Bookmarks in BookmarkHub format';
+  }
+
+  const files={};
+  files[filename]={content};
+
+  try{
+    const resp=await fetch('https://api.github.com/gists',{
+      method:'POST',
+      headers:{
+        'Authorization':`token ${token}`,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        description,
+        public:false,
+        files
+      })
+    });
+
+    if(!resp.ok){
+      const err=await resp.text();
+      if(resp.status===401){
+        localStorage.removeItem('github_token');
+        alert('Token 无效或已过期，已清除。请重新输入。');
+      }else{
+        alert(`上传失败 (${resp.status}): ${err}`);
+      }
+      return;
+    }
+
+    const result=await resp.json();
+    const url=result.html_url;
+    const rawUrl=result.files[filename].raw_url;
+
+    if(confirm(`✅ 上传成功！\n\nGist URL: ${url}\n原始文件: ${rawUrl}\n\n是否打开 Gist 页面？`)){
+      window.open(url,'_blank');
+    }
+  }catch(e){
+    alert('上传失败: '+e.message);
+  }
+};
+
+function updateTokenStatus(){
+  const status=document.getElementById('tokenStatus');
+  if(!status)return;
+  const token=localStorage.getItem('github_token');
+  if(token){
+    status.innerHTML=' <button onclick="clearToken()" style="border:1px solid var(--ln);border-radius:8px;padding:2px 8px;background:var(--sf2);font:11px inherit;cursor:pointer;margin-left:8px">已保存 Token（点击清除）</button>';
+  }else{
+    status.innerHTML='';
+  }
+}
+
+function clearToken(){
+  if(confirm('确定清除已保存的 GitHub Token？')){
+    localStorage.removeItem('github_token');
+    updateTokenStatus();
+    alert('Token 已清除');
+  }
+}
+
+window.clearToken=clearToken;
+
+if(document.getElementById('reviewScreen')){
+  setTimeout(updateTokenStatus,100);
+}
+
 </script>
 </body>
 </html>

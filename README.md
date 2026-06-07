@@ -149,6 +149,12 @@
 3. 每条书签有四个对称操作：**保留** / **删除** / **→ A** / **→ B**
 4. 支持搜索、按类型/状态筛选、批量操作
 5. 审核完成后选择导出格式（见下节）
+6. **新功能**：可直接上传到 GitHub Gist
+   - 点击 **📤 Gist** 按钮
+   - 首次使用需输入 GitHub Personal Access Token（权限：`gist`）
+   - Token 获取地址：https://github.com/settings/tokens/new
+   - Token 保存在浏览器 localStorage，仅本地使用
+   - 支持所有导出格式上传（BookmarkHub.txt、HTML、JSON）
 
 ### 辅助脚本
 
@@ -178,6 +184,7 @@ python3 scripts/apply_bookmark_review_decisions.py \
 | **Chromium HTML** | `.edge-chrome.html` | Edge / Chrome / Firefox / Brave 等 | 顶层 `个人收藏` 文件夹带 `PERSONAL_TOOLBAR_FOLDER="true"`，导入后**自动放入收藏夹栏** |
 | **Safari HTML** | `.safari.html` | Safari（亦可用于上面所有浏览器） | 含 `<HTML>` 外层包裹；Safari 不识别 PERSONAL_TOOLBAR_FOLDER 故省略 |
 | **树形 JSON** | `.tree.json` | 通用（机器可读、可再次导入或编程处理） | schema 固定为 `bookmark-tree/v1`，节点统一为 `folder` / `bookmark` 两种 |
+| **BookmarkHub.txt** | `.BookmarkHub.txt` | [BookmarkHub](https://github.com/nicehash/BookmarkHub) 扩展导入 | 嵌套结构 JSON 格式，可直接导入 BookmarkHub 扩展或上传到 GitHub Gist |
 
 ### Chromium HTML 规格
 
@@ -242,6 +249,37 @@ python3 scripts/apply_bookmark_review_decisions.py \
 - 节点只有两种 `type`：`folder`（含 `children` 数组）或 `bookmark`（含 `url` 字符串）
 - 缺省字段省略；UTF-8 无 BOM、缩进 2 空格
 
+### BookmarkHub.txt 规格
+
+```json
+{
+  "browser": "Mozilla/5.0 ...",
+  "version": "0.0.6",
+  "createDate": 1774428960959,
+  "bookmarks": [
+    {
+      "children": [
+        {
+          "title": "文件夹名",
+          "children": [
+            {
+              "syncing": true,
+              "title": "书签标题",
+              "url": "https://example.com/"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+- 嵌套结构，文件夹节点含 `title` 和 `children`，书签节点含 `syncing`、`title`、`url`
+- 虽然扩展名是 `.txt`，实际是标准 JSON 格式
+- 可直接导入 [BookmarkHub](https://github.com/nicehash/BookmarkHub) 浏览器扩展
+- 适合上传到 GitHub Gist 进行云端备份
+
 ---
 
 ## 前端导出选项
@@ -254,7 +292,9 @@ python3 scripts/apply_bookmark_review_decisions.py \
 | A 侧 · 三种格式 | `bookmarks-A-merged.edge-chrome.html` + `.safari.html` + `.tree.json` |
 | B 侧 · 三种格式 | `bookmarks-B-merged.edge-chrome.html` + `.safari.html` + `.tree.json` |
 | 两侧 · 全部六个文件 | 上面 6 个文件 |
-| A / B · 单种格式 | 单独下载某一格式 |
+| A / B · 单种格式 | 单独下载某一格式（包括 BookmarkHub.txt） |
+
+**上传到 GitHub Gist**：点击 **📤 Gist** 按钮可将选中的单个格式直接上传到 GitHub Gist（私有），适合云端备份或跨设备同步。
 
 ---
 
@@ -291,7 +331,8 @@ README.md
 - 自动跳过 `javascript:` bookmarklet 和可配置的排除文件夹（默认排除"小书签栏"）
 - 双向对称设计：A 和 B 地位相同，任意一侧都可加入/删除
 - 导出的决策 JSON 可供脚本自动化处理
-- **每次导出同时产出三种规范化格式**（Edge/Chrome、Safari、JSON），覆盖全部主流导入场景
+- **支持四种规范化格式**（Edge/Chrome、Safari、树形 JSON、BookmarkHub.txt），覆盖全部主流导入场景
+- **一键上传到 GitHub Gist**：支持所有格式直接上传云端备份，方便跨设备同步
 
 ---
 
