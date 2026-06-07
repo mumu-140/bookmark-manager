@@ -117,6 +117,11 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
         <button onclick="downloadGist()" class="go-btn" style="margin:0;width:auto;padding:10px 20px">💾 下载</button>
         <button onclick="uploadGist()" class="go-btn" style="margin:0;width:auto;padding:10px 20px;background:var(--blu)">☁️ 上传到 Gist</button>
       </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="color:var(--mt);font-size:13px">或带着这份数据去对比：</span>
+        <button onclick="sendToCompare('a')" style="border:1px solid var(--grn);color:var(--grn);background:var(--gbg);border-radius:var(--r);padding:8px 16px;font:600 13px inherit;cursor:pointer">⚖️ 用作 A 对比</button>
+        <button onclick="sendToCompare('b')" style="border:1px solid var(--blu);color:var(--blu);background:var(--bbg);border-radius:var(--r);padding:8px 16px;font:600 13px inherit;cursor:pointer">⚖️ 用作 B 对比</button>
+      </div>
     </div>
     <p style="color:var(--mt);font-size:12px;margin:12px 0 0">提示：上传到 Gist 需要 GitHub Personal Access Token（权限：gist）<span id="tokenStatusGist"></span></p>
   </div>
@@ -650,93 +655,128 @@ document.getElementById('btnExport').onclick=()=>{
   if(sel) exportSide(sel[0],sel[1]);
 };
 
-document.getElementById('btnGist').onclick=async()=>{
+/* ===== 共享 Gist 上传：格式检查 + 覆盖询问 ===== */
+function validateExport(content,fmt){
+  if(!content||!content.trim())return '导出内容为空';
+  if(fmt==='bookmarkhub'){
+    try{
+      const d=JSON.parse(content);
+      if(!Array.isArray(d.bookmarks))return 'BookmarkHub 格式缺少 bookmarks 数组';
+      let cnt=0;(function walk(n){if(n.url)cnt++;if(Array.isArray(n.children))n.children.forEach(walk)})(d.bookmarks[0]||{});
+      if(cnt===0)return 'BookmarkHub 输出中没有任何书签';
+    }catch(e){return 'JSON 解析失败: '+e.message}
+  }else if(fmt==='json'){
+    try{
+      const d=JSON.parse(content);
+      if(d.schema!=='bookmark-tree/v1')return '树形 JSON 缺少 schema: bookmark-tree/v1';
+    }catch(e){return 'JSON 解析失败: '+e.message}
+  }else{
+    if(!content.includes('<!DOCTYPE NETSCAPE-Bookmark-file-1>'))return 'HTML 缺少 Netscape 书签声明';
+    if(!/<A\s+HREF=/i.test(content))return 'HTML 中没有任何书签链接';
+  }
+  return null;
+}
+
+function getGistIds(){try{return JSON.parse(localStorage.getItem('gist_ids')||'{}')}catch{return{}}}
+function saveGistId(filename,id){const ids=getGistIds();ids[filename]=id;localStorage.setItem('gist_ids',JSON.stringify(ids))}
+
+async function uploadToGistShared(content,filename,description,fmt){
+  // 1. 格式检查
+  const err=validateExport(content,fmt);
+  if(err){alert('❌ 格式检查未通过：'+err+'\n\n已取消上传。');return}
+
+  // 2. Token
   const token=localStorage.getItem('github_token');
   if(!token){
     const input=prompt('请输入你的 GitHub Personal Access Token\n\n权限需要: gist\n\n获取地址: https://github.com/settings/tokens/new\n\n（Token 会保存在浏览器 localStorage 中，仅本地使用）');
     if(!input)return;
     localStorage.setItem('github_token',input.trim());
+    if(typeof updateTokenStatus==='function')updateTokenStatus();
+    if(typeof updateTokenStatusGist==='function')updateTokenStatusGist();
     alert('Token 已保存，请再次点击上传');
     return;
   }
 
+  // 3. 覆盖询问
+  const existingId=getGistIds()[filename];
+  let method='POST',apiUrl='https://api.github.com/gists';
+  if(existingId){
+    if(confirm(`此前上传过 ${filename}\nGist ID: ${existingId}\n\n确定 = 覆盖更新该 Gist\n取消 = 创建一个新的 Gist`)){
+      method='PATCH';apiUrl+='/'+existingId;
+    }
+  }
+
+  const files={};files[filename]={content};
+
+  async function doRequest(m,u){
+    return fetch(u,{
+      method:m,
+      headers:{'Authorization':`token ${token}`,'Content-Type':'application/json'},
+      body:JSON.stringify({description,public:false,files})
+    });
+  }
+
+  try{
+    let resp=await doRequest(method,apiUrl);
+
+    // 旧 Gist 已被删除 → 回退为新建
+    if(method==='PATCH'&&resp.status===404){
+      if(!confirm('原 Gist 已不存在（可能被删除）。是否创建新的 Gist？'))return;
+      resp=await doRequest('POST','https://api.github.com/gists');
+    }
+
+    if(!resp.ok){
+      const errText=await resp.text();
+      if(resp.status===401){
+        localStorage.removeItem('github_token');
+        if(typeof updateTokenStatus==='function')updateTokenStatus();
+        if(typeof updateTokenStatusGist==='function')updateTokenStatusGist();
+        alert('Token 无效或已过期，已清除。请重新输入。');
+      }else{
+        alert(`上传失败 (${resp.status}): ${errText}`);
+      }
+      return;
+    }
+
+    const result=await resp.json();
+    saveGistId(filename,result.id);
+    const url=result.html_url;
+    const rawUrl=result.files[filename].raw_url;
+    const verb=method==='PATCH'?'覆盖更新':'上传';
+
+    if(confirm(`✅ ${verb}成功！\n\nGist URL: ${url}\n原始文件: ${rawUrl}\n\n是否打开 Gist 页面？`)){
+      window.open(url,'_blank');
+    }
+  }catch(e){
+    alert('上传失败: '+e.message);
+  }
+}
+
+function buildExportPayload(tree,which){
+  if(which==='edge')return{content:serializeHtmlChromium(tree),filename:'bookmarks.edge-chrome.html',description:'Bookmarks exported for Edge/Chrome',fmt:'edge'};
+  if(which==='safari')return{content:serializeHtmlSafari(tree),filename:'bookmarks.safari.html',description:'Bookmarks exported for Safari',fmt:'safari'};
+  if(which==='json')return{content:serializeTreeJson(tree),filename:'bookmarks.tree.json',description:'Bookmarks in tree JSON format',fmt:'json'};
+  return{content:serializeBookmarkHub(tree),filename:'BookmarkHub.txt',description:'Bookmarks in BookmarkHub format',fmt:'bookmarkhub'};
+}
+
+document.getElementById('btnGist').onclick=async()=>{
   const fmt=document.getElementById('exportType').value;
   if(fmt==='decisions'){
     alert('请选择书签格式（A/B 侧），决策 JSON 不支持上传到 Gist');
     return;
   }
 
-  let side,which;
   const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],a_bookmarkhub:['a','bookmarkhub'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json'],b_bookmarkhub:['b','bookmarkhub']};
   const sel=mapping[fmt];
-  if(sel){
-    side=sel[0];
-    which=sel[1];
-  }else{
+  if(!sel){
     alert('请选择具体的单个格式（不支持"全部"选项）');
     return;
   }
 
-  const entries=collectSide(side);
+  const entries=collectSide(sel[0]);
   const tree=buildTree(entries,true);
-  let content,filename,description;
-
-  if(which==='edge'){
-    content=serializeHtmlChromium(tree);
-    filename='bookmarks.edge-chrome.html';
-    description='Bookmarks exported for Edge/Chrome';
-  }else if(which==='safari'){
-    content=serializeHtmlSafari(tree);
-    filename='bookmarks.safari.html';
-    description='Bookmarks exported for Safari';
-  }else if(which==='json'){
-    content=serializeTreeJson(tree);
-    filename='bookmarks.tree.json';
-    description='Bookmarks in tree JSON format';
-  }else if(which==='bookmarkhub'){
-    content=serializeBookmarkHub(tree);
-    filename='BookmarkHub.txt';
-    description='Bookmarks in BookmarkHub format';
-  }
-
-  const files={};
-  files[filename]={content};
-
-  try{
-    const resp=await fetch('https://api.github.com/gists',{
-      method:'POST',
-      headers:{
-        'Authorization':`token ${token}`,
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({
-        description,
-        public:false,
-        files
-      })
-    });
-
-    if(!resp.ok){
-      const err=await resp.text();
-      if(resp.status===401){
-        localStorage.removeItem('github_token');
-        alert('Token 无效或已过期，已清除。请重新输入。');
-      }else{
-        alert(`上传失败 (${resp.status}): ${err}`);
-      }
-      return;
-    }
-
-    const result=await resp.json();
-    const url=result.html_url;
-    const rawUrl=result.files[filename].raw_url;
-
-    if(confirm(`✅ 上传成功！\n\nGist URL: ${url}\n原始文件: ${rawUrl}\n\n是否打开 Gist 页面？`)){
-      window.open(url,'_blank');
-    }
-  }catch(e){
-    alert('上传失败: '+e.message);
-  }
+  const p=buildExportPayload(tree,sel[1]);
+  await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
 };
 
 function updateTokenStatus(){
@@ -848,84 +888,17 @@ function downloadGist(){
 async function uploadGist(){
   if(!GIST_DATA.bookmarks){alert('请先导入书签文件');return}
 
-  const token=localStorage.getItem('github_token');
-  if(!token){
-    const input=prompt('请输入你的 GitHub Personal Access Token\n\n权限需要: gist\n\n获取地址: https://github.com/settings/tokens/new\n\n（Token 会保存在浏览器 localStorage 中，仅本地使用）');
-    if(!input)return;
-    localStorage.setItem('github_token',input.trim());
-    alert('Token 已保存，请再次点击上传');
-    updateTokenStatusGist();
-    return;
-  }
-
   const fmt=document.getElementById('gistFormat').value;
   const tree=buildTree(GIST_DATA.bookmarks,true);
-  let content,filename,description;
-
-  if(fmt==='bookmarkhub'){
-    content=serializeBookmarkHub(tree);
-    filename='BookmarkHub.txt';
-    description='Bookmarks in BookmarkHub format';
-  }else if(fmt==='edge'){
-    content=serializeHtmlChromium(tree);
-    filename='bookmarks.edge-chrome.html';
-    description='Bookmarks for Edge/Chrome';
-  }else if(fmt==='safari'){
-    content=serializeHtmlSafari(tree);
-    filename='bookmarks.safari.html';
-    description='Bookmarks for Safari';
-  }else if(fmt==='json'){
-    content=serializeTreeJson(tree);
-    filename='bookmarks.tree.json';
-    description='Bookmarks in tree JSON format';
-  }
-
-  const files={};
-  files[filename]={content};
-
-  try{
-    const resp=await fetch('https://api.github.com/gists',{
-      method:'POST',
-      headers:{
-        'Authorization':`token ${token}`,
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({
-        description,
-        public:false,
-        files
-      })
-    });
-
-    if(!resp.ok){
-      const err=await resp.text();
-      if(resp.status===401){
-        localStorage.removeItem('github_token');
-        updateTokenStatusGist();
-        alert('Token 无效或已过期，已清除。请重新输入。');
-      }else{
-        alert(`上传失败 (${resp.status}): ${err}`);
-      }
-      return;
-    }
-
-    const result=await resp.json();
-    const url=result.html_url;
-    const rawUrl=result.files[filename].raw_url;
-
-    if(confirm(`✅ 上传成功！\n\nGist URL: ${url}\n原始文件: ${rawUrl}\n\n是否打开 Gist 页面？`)){
-      window.open(url,'_blank');
-    }
-  }catch(e){
-    alert('上传失败: '+e.message);
-  }
+  const p=buildExportPayload(tree,fmt);
+  await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
 }
 
 async function fetchFromGist(){
   const url=document.getElementById('gistUrl').value.trim();
   if(!url){alert('请输入 Gist URL');return}
 
-  let rawUrl=url;
+  let rawUrl=url,gistFileName='从 Gist 下载';
   if(url.includes('gist.github.com')&&!url.includes('raw.githubusercontent.com')){
     try{
       const gistId=url.split('/').pop().split('#')[0];
@@ -936,6 +909,7 @@ async function fetchFromGist(){
       const files=Object.values(data.files);
       if(files.length===0){alert('Gist 中没有文件');return}
       rawUrl=files[0].raw_url;
+      gistFileName=files[0].filename||gistFileName;
     }catch(e){
       alert('获取 Gist 失败: '+e.message);
       return;
@@ -948,10 +922,10 @@ async function fetchFromGist(){
     const text=await resp.text();
     const parsed=autoParse(text);
     GIST_DATA.bookmarks=parsed.bm;
-    GIST_DATA.filename='从 Gist 下载';
-    nameGist.textContent=`从 Gist 下载 (${parsed.fmt}, ${parsed.bm.length} 个书签)`;
+    GIST_DATA.filename=gistFileName;
+    nameGist.textContent=`${gistFileName} (${parsed.fmt}, ${parsed.bm.length} 个书签)`;
     document.getElementById('gistActions').classList.remove('hidden');
-    alert(`✅ 成功获取 ${parsed.bm.length} 个书签！\n\n现在可以选择格式并下载或上传。`);
+    alert(`✅ 成功获取 ${parsed.bm.length} 个书签！\n\n你可以：\n· 选择格式后下载或上传\n· 点击 ⚖️ 用作 A/B 对比，与另一份书签做差异审核`);
   }catch(e){
     alert('下载失败: '+e.message);
   }
@@ -978,6 +952,38 @@ function clearTokenGist(){
 
 window.clearTokenGist=clearTokenGist;
 setTimeout(updateTokenStatusGist,100);
+
+// Send to compare mode
+function sendToCompare(side){
+  if(!GIST_DATA.bookmarks){alert('没有可用的书签数据');return}
+
+  // 将 Gist 数据序列化为 HTML（统一格式）
+  const tree=buildTree(GIST_DATA.bookmarks,true);
+  const htmlContent=serializeHtmlChromium(tree);
+
+  if(side==='a'){
+    rawA=htmlContent;
+    fnA=GIST_DATA.filename+' (从 Gist)';
+    document.getElementById('nameA').textContent=fnA;
+  }else{
+    rawB=htmlContent;
+    fnB=GIST_DATA.filename+' (从 Gist)';
+    document.getElementById('nameB').textContent=fnB;
+  }
+
+  // 切换到对比模式
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('gistScreen').classList.add('hidden');
+  document.getElementById('compareScreen').classList.remove('hidden');
+
+  // 更新按钮状态
+  document.getElementById('goBtn').disabled=!(rawA&&rawB);
+
+  const msg=side==='a'?'已将数据设为 A 侧':'已将数据设为 B 侧';
+  alert(`✅ ${msg}\n\n请继续导入另一侧书签，然后点击"开始对比审核"。`);
+}
+
+window.sendToCompare=sendToCompare;
 
 </script>
 </body>
