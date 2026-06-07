@@ -606,12 +606,14 @@ function dlFile(content,name,type){
 function serializeBookmarkHub(tree){
   function convertNode(node){
     if(node.children){
+      // 文件夹节点：键顺序匹配 Edge 格式 [children, syncing, title]
       return {
+        children:node.children.map(c=>convertNode(c)),
         syncing:true,
-        title:node.title,
-        children:node.children.map(c=>convertNode(c))
+        title:node.title
       };
     }else{
+      // 书签节点：键顺序匹配 Edge 格式 [syncing, title, url]
       return {
         syncing:true,
         title:node.title,
@@ -620,9 +622,10 @@ function serializeBookmarkHub(tree){
     }
   }
 
-  // 匹配 Safari 官方格式：bookmarks 数组包含两个顶层节点
+  // 匹配 Edge BookmarkHub 官方格式：bookmarks 数组包含两个顶层节点
   // 1. ToolbarFolder (folderType: bookmarks-bar) - 书签栏
   // 2. 其他收藏夹 (folderType: other) - 其他书签
+  // 键顺序：[children, folderType, syncing, title]
 
   const rootChildren=tree.children.map(c=>convertNode(c));
 
@@ -632,16 +635,16 @@ function serializeBookmarkHub(tree){
     createDate:Date.now(),
     bookmarks:[
       {
-        syncing:true,
-        title:"ToolbarFolder",
+        children:rootChildren,
         folderType:"bookmarks-bar",
-        children:rootChildren
+        syncing:true,
+        title:"ToolbarFolder"
       },
       {
-        syncing:true,
-        title:"其他收藏夹",
+        children:[{children:[],syncing:true,title:"其他收藏夹"}],
         folderType:"other",
-        children:[{syncing:true,title:"其他收藏夹",children:[]}]
+        syncing:true,
+        title:"其他收藏夹"
       }
     ]
   };
