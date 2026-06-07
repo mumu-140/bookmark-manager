@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **智能 Gist 覆盖选择**
+  - 用户反馈：上传原始文件时新建了 Gist，而不是覆盖已有的
+  - 新增模糊匹配逻辑：按文件扩展名查找相似的已上传文件
+  - 找到相似文件时，显示列表让用户选择要覆盖哪一个
+  - 支持覆盖不同文件名的同类型 Gist（如用 `BookmarkHub.txt` 覆盖 `bookmarks-B-merged.BookmarkHub.txt`）
+  - 空输入则创建新 Gist，灵活可控
 - **对比模式新增"原始文件导出"选项**
   - 用户反馈：不做任何审核修改，想直接导出/上传 A 或 B 的完整内容
   - 新增选项组"原始文件（未经审核）"，包含 A/B 四种格式各自的原始导出

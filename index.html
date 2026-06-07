@@ -759,14 +759,35 @@ async function uploadToGistShared(content,filename,description,fmt){
     return;
   }
 
-  // 3. 覆盖询问
-  const existingId=getGistIds()[filename];
+  // 3. 覆盖询问（支持模糊匹配）
+  const allGists=getGistIds();
+  const exactMatch=allGists[filename];
+
+  // 查找同类型文件（BookmarkHub.txt 可以匹配任何 .txt，HTML 可以匹配任何 .html）
+  const ext=filename.split('.').pop().toLowerCase();
+  const similarGists=Object.entries(allGists).filter(([name,id])=>{
+    const nameExt=name.split('.').pop().toLowerCase();
+    return nameExt===ext || (ext==='txt'&&nameExt==='txt') || (ext==='html'&&nameExt.includes('html'));
+  });
+
   let method='POST',apiUrl='https://api.github.com/gists';
-  if(existingId){
+
+  if(exactMatch){
     hideLoading();
-    const shouldUpdate=confirm(`此前上传过 ${filename}\nGist ID: ${existingId}\n\n确定 = 覆盖更新该 Gist\n取消 = 创建一个新的 Gist`);
-    if(shouldUpdate){
-      method='PATCH';apiUrl+='/'+existingId;
+    if(confirm(`此前上传过同名文件 ${filename}\nGist ID: ${exactMatch}\n\n确定 = 覆盖更新该 Gist\n取消 = 创建一个新的 Gist`)){
+      method='PATCH';apiUrl+='/'+exactMatch;
+    }
+  }else if(similarGists.length>0){
+    hideLoading();
+    const options=similarGists.map(([name,id],i)=>`${i+1}. ${name} (ID: ${id.slice(0,8)}...)`).join('\n');
+    const choice=prompt(`找到 ${similarGists.length} 个相似的已上传文件：\n\n${options}\n\n输入序号覆盖对应文件，留空则创建新 Gist：`);
+    if(choice){
+      const idx=parseInt(choice)-1;
+      if(idx>=0&&idx<similarGists.length){
+        method='PATCH';
+        apiUrl+='/'+similarGists[idx][1];
+        filename=similarGists[idx][0]; // 使用原文件名
+      }
     }
   }
 
