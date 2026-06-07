@@ -67,14 +67,74 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
 .note{margin-top:6px;width:100%;min-height:32px;border:1px solid var(--ln);border-radius:9px;padding:6px 9px;font:13px inherit;resize:vertical}
 .foot{color:var(--mt);font-size:13px;margin-top:18px}
 .hidden{display:none!important}
+.feature-card:hover{border-color:var(--ac)!important}
 @media(max-width:700px){.bar{flex-direction:column}.stats{grid-template-columns:1fr 1fr}.cmp{grid-template-columns:1fr}}
+@media(max-width:600px){#homeScreen>div{grid-template-columns:1fr!important}}
 </style>
 </head>
 <body>
 
-<div id="importScreen" class="import-wrap">
-  <h1>书签审核工具</h1>
-  <p class="desc">导入两份书签文件进行双向对比审核。支持 Netscape 书签 HTML 和 BookmarkHub JSON，自动识别。独有书签可保留、同步到对侧或删除；共同差异可选用 A 或 B 的版本。</p>
+<div id="homeScreen" class="import-wrap">
+  <h1>书签管理工具</h1>
+  <p class="desc">从 Safari 导出书签，转换格式，上传到 GitHub Gist 云端备份，或对比两份书签文件。</p>
+
+  <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr;margin-bottom:20px">
+    <div class="feature-card" onclick="showGistMode()" style="cursor:pointer;border:2px solid var(--ln);border-radius:16px;padding:24px;background:#fff;transition:border-color .15s">
+      <div style="font-size:32px;margin-bottom:8px">☁️</div>
+      <h3 style="margin:0 0 8px;font-size:18px">Gist 云端备份</h3>
+      <p style="margin:0;color:var(--mt);font-size:13px">导入书签 → 转换格式 → 上传到 GitHub Gist 或从 Gist 下载</p>
+    </div>
+    <div class="feature-card" onclick="showCompareMode()" style="cursor:pointer;border:2px solid var(--ln);border-radius:16px;padding:24px;background:#fff;transition:border-color .15s">
+      <div style="font-size:32px;margin-bottom:8px">⚖️</div>
+      <h3 style="margin:0 0 8px;font-size:18px">双向对比审核</h3>
+      <p style="margin:0;color:var(--mt);font-size:13px">导入两份书签 → 对比差异 → 审核合并 → 导出结果</p>
+    </div>
+  </div>
+</div>
+
+<div id="gistScreen" class="import-wrap hidden">
+  <button onclick="backToHome()" style="border:1px solid var(--ln);border-radius:8px;padding:6px 12px;background:#fff;font:13px inherit;cursor:pointer;margin-bottom:20px">← 返回首页</button>
+  <h1>Gist 云端备份</h1>
+  <p class="desc">导入书签文件，转换为任意格式，直接上传到 GitHub Gist 或下载到本地。</p>
+
+  <div class="drop-zone" id="dropGist">
+    <h3>📁 导入书签文件</h3>
+    <p>支持 Safari / Chrome / Edge HTML 或 BookmarkHub JSON</p>
+    <div class="fname" id="nameGist"></div>
+    <input type="file" accept=".html,.htm,.json,.txt" hidden id="fileGist">
+  </div>
+
+  <div id="gistActions" class="hidden" style="margin-top:20px">
+    <h3 style="margin:0 0 12px;font-size:16px">选择操作</h3>
+    <div style="display:grid;gap:10px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="gistFormat" style="flex:1;border:1px solid var(--ln);border-radius:var(--r);padding:10px;background:#fff;font:inherit">
+          <option value="bookmarkhub">BookmarkHub.txt</option>
+          <option value="edge">Edge/Chrome HTML</option>
+          <option value="safari">Safari HTML</option>
+          <option value="json">树形 JSON</option>
+        </select>
+        <button onclick="downloadGist()" class="go-btn" style="margin:0;width:auto;padding:10px 20px">💾 下载</button>
+        <button onclick="uploadGist()" class="go-btn" style="margin:0;width:auto;padding:10px 20px;background:var(--blu)">☁️ 上传到 Gist</button>
+      </div>
+    </div>
+    <p style="color:var(--mt);font-size:12px;margin:12px 0 0">提示：上传到 Gist 需要 GitHub Personal Access Token（权限：gist）<span id="tokenStatusGist"></span></p>
+  </div>
+
+  <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--ln)">
+    <h3 style="margin:0 0 12px;font-size:16px">📥 从 Gist 下载</h3>
+    <p style="color:var(--mt);font-size:13px;margin:0 0 12px">输入 Gist URL 或原始文件 URL，下载并转换为其他格式。</p>
+    <div style="display:flex;gap:8px">
+      <input id="gistUrl" placeholder="https://gist.github.com/..." style="flex:1;border:1px solid var(--ln);border-radius:var(--r);padding:10px;background:#fff;font:inherit">
+      <button onclick="fetchFromGist()" class="go-btn" style="margin:0;width:auto;padding:10px 20px">🔽 获取</button>
+    </div>
+  </div>
+</div>
+
+<div id="compareScreen" class="import-wrap hidden">
+  <button onclick="backToHome()" style="border:1px solid var(--ln);border-radius:8px;padding:6px 12px;background:#fff;font:13px inherit;cursor:pointer;margin-bottom:20px">← 返回首页</button>
+  <h1>双向对比审核</h1>
+  <p class="desc">导入两份书签文件进行对比审核。支持 Netscape 书签 HTML 和 BookmarkHub JSON，自动识别。</p>
   <div class="drop-zone" id="dropA">
     <h3>A 书签</h3>
     <p>拖放或点击选择（HTML / JSON）</p>
@@ -245,7 +305,7 @@ goBtn.onclick=()=>{
       allA:a.bm,allB:b.bm,
       summary:{bOnly:items.filter(i=>i.type==='b_only').length,aOnly:items.filter(i=>i.type==='a_only').length,diff:items.filter(i=>i.type==='diff').length,total:items.length}};
     state=new Map(items.map(it=>[it.id,{action:it.defaultAction,note:''}]));
-    document.getElementById('importScreen').classList.add('hidden');
+    document.getElementById('compareScreen').classList.add('hidden');
     document.getElementById('reviewScreen').classList.remove('hidden');
     document.getElementById('subInfo').textContent=
       `A: ${DATA.nameA} (${DATA.fmtA}, ${DATA.cntA} 条)  ｜  B: ${DATA.nameB} (${DATA.fmtB}, ${DATA.cntB} 条)  ｜  已排除 小书签栏 和 javascript:`;
@@ -254,7 +314,7 @@ goBtn.onclick=()=>{
 };
 document.getElementById('btnBack').onclick=()=>{
   document.getElementById('reviewScreen').classList.add('hidden');
-  document.getElementById('importScreen').classList.remove('hidden');
+  document.getElementById('compareScreen').classList.remove('hidden');
 };
 
 /* ===== review ===== */
@@ -730,6 +790,221 @@ window.clearToken=clearToken;
 if(document.getElementById('reviewScreen')){
   setTimeout(updateTokenStatus,100);
 }
+
+// Screen navigation
+function showGistMode(){
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('gistScreen').classList.remove('hidden');
+  document.getElementById('compareScreen').classList.add('hidden');
+}
+
+function showCompareMode(){
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('gistScreen').classList.add('hidden');
+  document.getElementById('compareScreen').classList.remove('hidden');
+}
+
+function backToHome(){
+  document.getElementById('homeScreen').classList.remove('hidden');
+  document.getElementById('gistScreen').classList.add('hidden');
+  document.getElementById('compareScreen').classList.add('hidden');
+  document.getElementById('reviewScreen').classList.add('hidden');
+}
+
+// Gist mode globals
+let GIST_DATA={bookmarks:null,filename:''};
+
+// Gist file upload
+const dropGist=document.getElementById('dropGist');
+const fileGist=document.getElementById('fileGist');
+const nameGist=document.getElementById('nameGist');
+
+dropGist.onclick=()=>fileGist.click();
+dropGist.ondragover=e=>{e.preventDefault();dropGist.classList.add('over')};
+dropGist.ondragleave=()=>dropGist.classList.remove('over');
+dropGist.ondrop=e=>{
+  e.preventDefault();dropGist.classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(f)loadGistFile(f);
+};
+fileGist.onchange=()=>{if(fileGist.files[0])loadGistFile(fileGist.files[0])};
+
+function loadGistFile(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const parsed=autoParse(r.result);
+      GIST_DATA.bookmarks=parsed.bm;
+      GIST_DATA.filename=file.name;
+      nameGist.textContent=`${file.name} (${parsed.fmt}, ${parsed.bm.length} 个书签)`;
+      document.getElementById('gistActions').classList.remove('hidden');
+    }catch(e){
+      alert('解析失败: '+e.message);
+    }
+  };
+  r.readAsText(file);
+}
+
+function downloadGist(){
+  if(!GIST_DATA.bookmarks){alert('请先导入书签文件');return}
+  const fmt=document.getElementById('gistFormat').value;
+  const tree=buildTree(GIST_DATA.bookmarks,true);
+  let content,filename,mime;
+
+  if(fmt==='bookmarkhub'){
+    content=serializeBookmarkHub(tree);
+    filename='BookmarkHub.txt';
+    mime='text/plain;charset=utf-8';
+  }else if(fmt==='edge'){
+    content=serializeHtmlChromium(tree);
+    filename='bookmarks.edge-chrome.html';
+    mime='text/html;charset=utf-8';
+  }else if(fmt==='safari'){
+    content=serializeHtmlSafari(tree);
+    filename='bookmarks.safari.html';
+    mime='text/html;charset=utf-8';
+  }else if(fmt==='json'){
+    content=serializeTreeJson(tree);
+    filename='bookmarks.tree.json';
+    mime='application/json;charset=utf-8';
+  }
+
+  dlFile(content,filename,mime);
+}
+
+async function uploadGist(){
+  if(!GIST_DATA.bookmarks){alert('请先导入书签文件');return}
+
+  const token=localStorage.getItem('github_token');
+  if(!token){
+    const input=prompt('请输入你的 GitHub Personal Access Token\n\n权限需要: gist\n\n获取地址: https://github.com/settings/tokens/new\n\n（Token 会保存在浏览器 localStorage 中，仅本地使用）');
+    if(!input)return;
+    localStorage.setItem('github_token',input.trim());
+    alert('Token 已保存，请再次点击上传');
+    updateTokenStatusGist();
+    return;
+  }
+
+  const fmt=document.getElementById('gistFormat').value;
+  const tree=buildTree(GIST_DATA.bookmarks,true);
+  let content,filename,description;
+
+  if(fmt==='bookmarkhub'){
+    content=serializeBookmarkHub(tree);
+    filename='BookmarkHub.txt';
+    description='Bookmarks in BookmarkHub format';
+  }else if(fmt==='edge'){
+    content=serializeHtmlChromium(tree);
+    filename='bookmarks.edge-chrome.html';
+    description='Bookmarks for Edge/Chrome';
+  }else if(fmt==='safari'){
+    content=serializeHtmlSafari(tree);
+    filename='bookmarks.safari.html';
+    description='Bookmarks for Safari';
+  }else if(fmt==='json'){
+    content=serializeTreeJson(tree);
+    filename='bookmarks.tree.json';
+    description='Bookmarks in tree JSON format';
+  }
+
+  const files={};
+  files[filename]={content};
+
+  try{
+    const resp=await fetch('https://api.github.com/gists',{
+      method:'POST',
+      headers:{
+        'Authorization':`token ${token}`,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        description,
+        public:false,
+        files
+      })
+    });
+
+    if(!resp.ok){
+      const err=await resp.text();
+      if(resp.status===401){
+        localStorage.removeItem('github_token');
+        updateTokenStatusGist();
+        alert('Token 无效或已过期，已清除。请重新输入。');
+      }else{
+        alert(`上传失败 (${resp.status}): ${err}`);
+      }
+      return;
+    }
+
+    const result=await resp.json();
+    const url=result.html_url;
+    const rawUrl=result.files[filename].raw_url;
+
+    if(confirm(`✅ 上传成功！\n\nGist URL: ${url}\n原始文件: ${rawUrl}\n\n是否打开 Gist 页面？`)){
+      window.open(url,'_blank');
+    }
+  }catch(e){
+    alert('上传失败: '+e.message);
+  }
+}
+
+async function fetchFromGist(){
+  const url=document.getElementById('gistUrl').value.trim();
+  if(!url){alert('请输入 Gist URL');return}
+
+  let rawUrl=url;
+  if(url.includes('gist.github.com')&&!url.includes('raw.githubusercontent.com')){
+    try{
+      const gistId=url.split('/').pop().split('#')[0];
+      const apiUrl=`https://api.github.com/gists/${gistId}`;
+      const resp=await fetch(apiUrl);
+      if(!resp.ok){alert('无法获取 Gist，请检查 URL 是否正确');return}
+      const data=await resp.json();
+      const files=Object.values(data.files);
+      if(files.length===0){alert('Gist 中没有文件');return}
+      rawUrl=files[0].raw_url;
+    }catch(e){
+      alert('获取 Gist 失败: '+e.message);
+      return;
+    }
+  }
+
+  try{
+    const resp=await fetch(rawUrl);
+    if(!resp.ok){alert('下载文件失败');return}
+    const text=await resp.text();
+    const parsed=autoParse(text);
+    GIST_DATA.bookmarks=parsed.bm;
+    GIST_DATA.filename='从 Gist 下载';
+    nameGist.textContent=`从 Gist 下载 (${parsed.fmt}, ${parsed.bm.length} 个书签)`;
+    document.getElementById('gistActions').classList.remove('hidden');
+    alert(`✅ 成功获取 ${parsed.bm.length} 个书签！\n\n现在可以选择格式并下载或上传。`);
+  }catch(e){
+    alert('下载失败: '+e.message);
+  }
+}
+
+function updateTokenStatusGist(){
+  const status=document.getElementById('tokenStatusGist');
+  if(!status)return;
+  const token=localStorage.getItem('github_token');
+  if(token){
+    status.innerHTML=' <button onclick="clearTokenGist()" style="border:1px solid var(--ln);border-radius:8px;padding:2px 8px;background:var(--sf2);font:11px inherit;cursor:pointer;margin-left:4px">已保存（清除）</button>';
+  }else{
+    status.innerHTML='';
+  }
+}
+
+function clearTokenGist(){
+  if(confirm('确定清除已保存的 GitHub Token？')){
+    localStorage.removeItem('github_token');
+    updateTokenStatusGist();
+    alert('Token 已清除');
+  }
+}
+
+window.clearTokenGist=clearTokenGist;
+setTimeout(updateTokenStatusGist,100);
 
 </script>
 </body>
