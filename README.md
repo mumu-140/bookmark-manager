@@ -7,6 +7,7 @@
 ## 目录
 
 - [试用](#试用)
+- [快速开始](QUICK_START.md) 🚀
 - [自行部署](#自行部署)
   - [方案 A：Cloudflare Pages（推荐）](#方案-acloudflare-pages推荐)
   - [方案 B：GitHub Actions + GitHub Pages](#方案-bgithub-actions--github-pages)
