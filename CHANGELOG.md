@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **重要修复**：BookmarkHub.txt 格式与 Safari 官方保持一致
+  - 修正为双顶层节点结构：`ToolbarFolder` (bookmarks-bar) + `其他收藏夹` (other)
+  - 修复前：只有一个 ToolbarFolder，导致从 GitHub 导入和工具导出的路径前缀不匹配
+  - 修复后：完全匹配 Safari 导出的 BookmarkHub 扩展官方格式
+
 ### Added
 - **全新首页设计**：双功能入口选择
   - ☁️ Gist 云端备份模式（单文件转换与上传/下载）

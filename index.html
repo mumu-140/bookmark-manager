@@ -587,14 +587,12 @@ function dlFile(content,name,type){
 function serializeBookmarkHub(tree){
   function convertNode(node){
     if(node.children){
-      // 文件夹节点
       return {
         syncing:true,
         title:node.title,
         children:node.children.map(c=>convertNode(c))
       };
     }else{
-      // 书签节点
       return {
         syncing:true,
         title:node.title,
@@ -603,18 +601,30 @@ function serializeBookmarkHub(tree){
     }
   }
 
+  // 匹配 Safari 官方格式：bookmarks 数组包含两个顶层节点
+  // 1. ToolbarFolder (folderType: bookmarks-bar) - 书签栏
+  // 2. 其他收藏夹 (folderType: other) - 其他书签
+
   const rootChildren=tree.children.map(c=>convertNode(c));
 
   const payload={
     browser:"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
     version:"0.0.6",
     createDate:Date.now(),
-    bookmarks:[{
-      syncing:true,
-      title:"ToolbarFolder",
-      folderType:"bookmarks-bar",
-      children:rootChildren
-    }]
+    bookmarks:[
+      {
+        syncing:true,
+        title:"ToolbarFolder",
+        folderType:"bookmarks-bar",
+        children:rootChildren
+      },
+      {
+        syncing:true,
+        title:"其他收藏夹",
+        folderType:"other",
+        children:[]
+      }
+    ]
   };
   return JSON.stringify(payload);
 }
