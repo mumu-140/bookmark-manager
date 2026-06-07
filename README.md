@@ -1,6 +1,9 @@
 # Bookmark Manager
 
-浏览器书签双向对比审核工具。对比两份书签文件（Safari、Edge、Chrome、BookmarkHub 等），逐条审核差异，导出决策 JSON，可选脚本自动合并。
+浏览器书签管理工具。支持两种模式：
+
+1. **☁️ Gist 云端备份** — 导入书签，转换格式，上传到 GitHub Gist 或从 Gist 下载
+2. **⚖️ 双向对比审核** — 对比两份书签文件，逐条审核差异，导出决策 JSON，可选脚本自动合并
 
 ---
 
@@ -138,9 +141,29 @@
 
 ## 使用
 
-### 审核工具（主入口）
+### 模式 1：Gist 云端备份（推荐）
 
-用浏览器打开 `index.html`（本地）或访问 https://bms.yanggod.bond ，无需安装任何依赖。
+用浏览器打开 `index.html`（本地）或访问 https://bms.yanggod.bond ，选择 **☁️ Gist 云端备份**。
+
+#### 上传到 Gist
+1. 导入书签文件（Safari / Chrome / Edge HTML 或 BookmarkHub JSON）
+2. 选择导出格式（BookmarkHub.txt / Edge HTML / Safari HTML / 树形 JSON）
+3. 点击 **☁️ 上传到 Gist**（首次需要输入 GitHub Personal Access Token）
+4. 获得 Gist URL，可在其他设备下载
+
+#### 从 Gist 下载
+1. 输入 Gist URL 或原始文件 URL
+2. 点击 **🔽 获取**
+3. 选择目标格式并下载
+
+#### 本地转换
+1. 导入书签文件
+2. 选择目标格式
+3. 点击 **💾 下载**
+
+### 模式 2：双向对比审核
+
+用浏览器打开 `index.html` 或访问 https://bms.yanggod.bond ，选择 **⚖️ 双向对比审核**。
 
 1. 分别导入 A、B 两份书签文件（支持 Netscape HTML 和 BookmarkHub JSON，自动识别）
 2. 工具自动解析、归一化 URL、对比差异，生成三类审核项：
@@ -150,7 +173,7 @@
 3. 每条书签有四个对称操作：**保留** / **删除** / **→ A** / **→ B**
 4. 支持搜索、按类型/状态筛选、批量操作
 5. 审核完成后选择导出格式（见下节）
-6. **新功能**：可直接上传到 GitHub Gist
+6. **可选功能**：上传到 GitHub Gist
    - 点击 **📤 Gist** 按钮
    - 首次使用需输入 GitHub Personal Access Token（权限：`gist`）
    - Token 获取地址：https://github.com/settings/tokens/new

@@ -580,65 +580,38 @@ function dlFile(content,name,type){
 }
 
 function serializeBookmarkHub(tree){
-  const bookmarks=[];
-  function traverse(node,path=[]){
-    if(node.kind==='folder'){
-      const newPath=[...path,node.title];
-      for(const child of node.children) traverse(child,newPath);
-    }else if(node.kind==='bookmark'){
-      bookmarks.push({
+  function convertNode(node){
+    if(node.children){
+      // 文件夹节点
+      return {
         syncing:true,
         title:node.title,
-        url:node.url,
-        path:path.join('/')
-      });
+        children:node.children.map(c=>convertNode(c))
+      };
+    }else{
+      // 书签节点
+      return {
+        syncing:true,
+        title:node.title,
+        url:node.url
+      };
     }
   }
-  for(const child of tree.children) traverse(child,[]);
+
+  const rootChildren=tree.children.map(c=>convertNode(c));
 
   const payload={
     browser:"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
     version:"0.0.6",
     createDate:Date.now(),
-    bookmarks:[{children:convertToNestedStructure(bookmarks)}]
+    bookmarks:[{
+      syncing:true,
+      title:"ToolbarFolder",
+      folderType:"bookmarks-bar",
+      children:rootChildren
+    }]
   };
   return JSON.stringify(payload);
-}
-
-function convertToNestedStructure(flatBookmarks){
-  const root={children:[]};
-  const folderMap=new Map();
-  folderMap.set('',root);
-
-  for(const bm of flatBookmarks){
-    const parts=bm.path?bm.path.split('/').filter(p=>p):[],parent=parts.slice(0,-1).join('/'),folderName=parts[parts.length-1]||'未分类';
-    let parentNode=folderMap.get(parent);
-    if(!parentNode){
-      parentNode=root;
-      if(parent){
-        const ancestorParts=parent.split('/').filter(p=>p);
-        for(let i=0;i<ancestorParts.length;i++){
-          const ancestorPath=ancestorParts.slice(0,i+1).join('/');
-          if(!folderMap.has(ancestorPath)){
-            const newFolder={title:ancestorParts[i],children:[]};
-            const ancestorParent=folderMap.get(ancestorParts.slice(0,i).join('/'))||root;
-            ancestorParent.children.push(newFolder);
-            folderMap.set(ancestorPath,newFolder);
-          }
-        }
-        parentNode=folderMap.get(parent);
-      }
-    }
-
-    let folder=folderMap.get(bm.path);
-    if(!folder){
-      folder={title:folderName,children:[]};
-      parentNode.children.push(folder);
-      folderMap.set(bm.path,folder);
-    }
-    folder.children.push({syncing:true,title:bm.title,url:bm.url});
-  }
-  return root.children;
 }
 
 document.getElementById('btnExport').onclick=()=>{
