@@ -5,76 +5,110 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>书签审核工具</title>
 <style>
-:root{--bg:#f4f1ec;--sf:#fffbf5;--sf2:#f9f5ee;--tx:#1a1714;--mt:#6e665d;--ln:#ddd4c8;--ac:#b05830;--ach:#8e3f1e;--grn:#1d7a50;--gbg:#e8f5ee;--amb:#a85c00;--abg:#fef4e0;--blu:#2068a8;--bbg:#e6f0fb;--red:#b8342c;--rbg:#fce8e6;--r:14px;--sh:0 2px 12px rgba(60,40,20,.08)}
+:root{--bg:#f4f1ec;--sf:#fffbf5;--sf2:#f9f5ee;--tx:#1a1714;--mt:#6e665d;--ln:#ddd4c8;--ac:#b05830;--ach:#8e3f1e;--grn:#1d7a50;--gbg:#e8f5ee;--amb:#a85c00;--abg:#fef4e0;--blu:#2068a8;--bbg:#e6f0fb;--red:#b8342c;--rbg:#fce8e6;--r:14px;--sh:0 2px 12px rgba(60,40,20,.08);--sbw:430px}
 *,*::before,*::after{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.65 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
 
 .import-wrap{max-width:720px;margin:60px auto;padding:0 20px}
-.import-wrap h1{font-size:24px;margin:0 0 6px}
-.import-wrap .desc{color:var(--mt);margin:0 0 28px}
+.import-wrap h1{font-size:28px;margin:0 0 8px;letter-spacing:-.01em}
+.import-wrap .desc{color:var(--mt);margin:0 0 28px;font-size:15px;line-height:1.7}
 .drop-zone{border:2px dashed var(--ln);border-radius:16px;padding:36px 24px;text-align:center;background:#fff;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:16px}
 .drop-zone.over{border-color:var(--ac);background:#fef8f4}
-.drop-zone h3{margin:0 0 4px;font-size:16px}
-.drop-zone p{margin:0;color:var(--mt);font-size:13px}
+.drop-zone h3{margin:0 0 4px;font-size:18px}
+.drop-zone p{margin:0;color:var(--mt);font-size:14px}
 .drop-zone .fname{margin-top:8px;font-weight:700;color:var(--grn)}
-.go-btn{display:block;width:100%;padding:13px;border:none;border-radius:var(--r);background:var(--ac);color:#fff;font:600 15px/1 inherit;cursor:pointer;margin-top:8px}
+.go-btn{display:block;width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--ac);color:#fff;font:600 16px/1 inherit;cursor:pointer;margin-top:8px}
 .go-btn:hover{background:var(--ach)}
 .go-btn:disabled{opacity:.4;cursor:default}
 
 header{position:sticky;top:0;z-index:20;background:rgba(244,241,236,.88);backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--ln)}
 .hdr{max-width:1100px;margin:0 auto;padding:14px 20px}
-h1.rev{margin:0;font-size:20px}
-.sub{color:var(--mt);margin:2px 0 0;font-size:13px}
+h1.rev{margin:0;font-size:22px}
+.sub{color:var(--mt);margin:2px 0 0;font-size:14px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
-.bar input{flex:1;min-width:160px;border:1px solid var(--ln);border-radius:var(--r);padding:8px 11px;background:#fff;font:inherit}
-.bar select,.bar button{border:1px solid var(--ln);border-radius:var(--r);padding:8px 12px;background:#fff;font:inherit;cursor:pointer;white-space:nowrap}
+.bar input{flex:1;min-width:160px;border:1px solid var(--ln);border-radius:var(--r);padding:9px 12px;background:#fff;font:inherit}
+.bar select,.bar button{border:1px solid var(--ln);border-radius:var(--r);padding:9px 13px;background:#fff;font:inherit;cursor:pointer;white-space:nowrap}
 .bar .pri{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
 .bar .pri:hover{background:var(--ach)}
 main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:14px}
-.stat{background:var(--sf);border:1px solid var(--ln);border-radius:var(--r);padding:12px;text-align:center}
-.stat b{display:block;font-size:20px}
-.stat span{color:var(--mt);font-size:11px}
+.stat{background:var(--sf);border:1px solid var(--ln);border-radius:var(--r);padding:13px;text-align:center}
+.stat b{display:block;font-size:24px}
+.stat span{color:var(--mt);font-size:12.5px}
 .batch{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.batch button{border:1px solid var(--ln);border-radius:10px;padding:6px 11px;background:var(--sf);font:13px inherit;cursor:pointer}
+.batch button{border:1px solid var(--ln);border-radius:10px;padding:7px 13px;background:var(--sf);font:14px inherit;cursor:pointer}
 .list{display:grid;gap:10px}
-.card{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:13px 15px;box-shadow:var(--sh);transition:border-color .15s}
+.card{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:14px 16px;box-shadow:var(--sh);transition:border-color .15s}
 .card:hover{border-color:#c4b9ac}
 .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.title{font-weight:700;font-size:15px}
-.url{color:var(--blu);word-break:break-all;font-size:12px;margin-top:2px}
+.title{font-weight:700;font-size:16px}
+.url{color:var(--blu);word-break:break-all;font-size:13px;margin-top:3px}
 .url a{color:inherit;text-decoration:none}
 .url a:hover{text-decoration:underline}
-.path{color:var(--mt);font-size:12px;margin-top:3px}
-.tag{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.path{color:var(--mt);font-size:13px;margin-top:3px}
+.tag{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0}
 .tag.hub{background:var(--bbg);color:var(--blu)}
 .tag.saf{background:var(--gbg);color:var(--grn)}
 .tag.dif{background:var(--abg);color:var(--amb)}
-.meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-.chip{border:1px solid var(--ln);background:var(--sf2);border-radius:999px;padding:1px 7px;font-size:11px;color:var(--mt)}
+.meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.chip{border:1px solid var(--ln);background:var(--sf2);border-radius:999px;padding:2px 8px;font-size:12.5px;color:var(--mt)}
 .cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.pnl{border:1px solid var(--ln);border-radius:10px;padding:9px 11px;background:var(--sf2)}
-.pnl h3{margin:0 0 4px;font-size:13px;font-weight:700}
-.pnl p{margin:2px 0;color:var(--mt);font-size:12px;word-break:break-all}
-.acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-.act{border:1px solid var(--ln);border-radius:9px;padding:5px 12px;background:#fff;font:13px inherit;cursor:pointer;transition:all .12s;user-select:none}
+.pnl{border:1px solid var(--ln);border-radius:10px;padding:10px 12px;background:var(--sf2)}
+.pnl h3{margin:0 0 4px;font-size:14px;font-weight:700}
+.pnl p{margin:3px 0;color:var(--mt);font-size:13px;word-break:break-all}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.act{border:1px solid var(--ln);border-radius:9px;padding:6px 13px;background:#fff;font:14px inherit;cursor:pointer;transition:all .12s;user-select:none}
 .act:hover{border-color:#aaa}
 .act.on{font-weight:700}
 .act.on.g{border-color:var(--grn);color:var(--grn);background:var(--gbg)}
 .act.on.a{border-color:var(--amb);color:var(--amb);background:var(--abg)}
 .act.on.r{border-color:var(--red);color:var(--red);background:var(--rbg)}
 .act.on.b{border-color:var(--blu);color:var(--blu);background:var(--bbg)}
-.note{margin-top:6px;width:100%;min-height:32px;border:1px solid var(--ln);border-radius:9px;padding:6px 9px;font:13px inherit;resize:vertical}
-.foot{color:var(--mt);font-size:13px;margin-top:18px}
+.note{margin-top:7px;width:100%;min-height:34px;border:1px solid var(--ln);border-radius:9px;padding:7px 10px;font:14px inherit;resize:vertical}
+.foot{color:var(--mt);font-size:14px;margin-top:18px;line-height:1.7}
 .hidden{display:none!important}
 .feature-card:hover{border-color:var(--ac)!important}
 .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,23,20,.6);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center}
 .loading-box{background:#fff;border-radius:16px;padding:32px 40px;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;min-width:280px}
 .loading-spinner{width:48px;height:48px;border:4px solid var(--ln);border-top-color:var(--ac);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-box h3{margin:0 0 8px;font-size:16px;font-weight:600}
-.loading-box p{margin:0;color:var(--mt);font-size:13px}
-@media(max-width:700px){.bar{flex-direction:column}.stats{grid-template-columns:1fr 1fr}.cmp{grid-template-columns:1fr}}
+.loading-box h3{margin:0 0 8px;font-size:17px;font-weight:600}
+.loading-box p{margin:0;color:var(--mt);font-size:14px}
+
+/* ===== 使用说明侧边栏 ===== */
+.help-fab{position:fixed;right:20px;bottom:20px;z-index:9990;display:inline-flex;align-items:center;gap:8px;border:none;border-radius:999px;padding:12px 20px;background:var(--ac);color:#fff;font:600 15px/1 inherit;cursor:pointer;box-shadow:0 6px 20px rgba(176,88,48,.34);transition:transform .15s,background .15s}
+.help-fab:hover{background:var(--ach);transform:translateY(-2px)}
+.help-fab:focus-visible{outline:3px solid var(--amb);outline-offset:2px}
+.help-fab svg{width:19px;height:19px;flex-shrink:0}
+.help-mask{position:fixed;inset:0;z-index:9995;background:rgba(26,23,20,.42);backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+.help-mask.show{opacity:1;visibility:visible}
+.help-panel{position:fixed;top:0;right:0;bottom:0;z-index:9996;width:min(var(--sbw),92vw);background:var(--sf);border-left:1px solid var(--ln);box-shadow:-10px 0 40px rgba(60,40,20,.18);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.help-panel.show{transform:translateX(0)}
+.help-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;border-bottom:1px solid var(--ln);background:var(--sf2)}
+.help-head h2{margin:0;font-size:18px}
+.help-close{border:1px solid var(--ln);border-radius:9px;width:36px;height:36px;background:#fff;font-size:17px;line-height:1;cursor:pointer;color:var(--mt);flex-shrink:0;transition:all .12s}
+.help-close:hover{border-color:var(--ac);color:var(--ac)}
+.help-close:focus-visible{outline:3px solid var(--amb);outline-offset:2px}
+.help-body{overflow-y:auto;padding:4px 22px 30px;-webkit-overflow-scrolling:touch}
+.help-sec{padding:18px 0;border-bottom:1px solid var(--ln)}
+.help-sec:last-child{border-bottom:none}
+.help-sec>h3{margin:0 0 10px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.help-sec p{margin:0 0 9px;font-size:14px;line-height:1.72}
+.help-sec p:last-child{margin-bottom:0}
+.help-sec p.muted{color:var(--mt)}
+.help-sec ul{margin:6px 0 0;padding:0;list-style:none}
+.help-sec li{position:relative;padding-left:18px;margin:8px 0;font-size:14px;line-height:1.65}
+.help-sec li:last-child{margin-bottom:0}
+.help-sec li::before{content:'';position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--ac)}
+.help-term{font-weight:700;color:var(--ac)}
+.help-step{counter-reset:s;margin:8px 0 0;padding:0;list-style:none}
+.help-step li{counter-increment:s;position:relative;padding-left:32px;margin:10px 0;font-size:14px;line-height:1.55}
+.help-step li::before{content:counter(s);position:absolute;left:0;top:-1px;width:22px;height:22px;border-radius:50%;background:var(--ac);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.help-kv{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:4px 0 0;font-size:13.5px;align-items:baseline}
+.help-kv b{color:var(--ac);white-space:nowrap}
+.help-kv span{color:var(--mt)}
+@media (prefers-reduced-motion:reduce){.help-panel,.help-mask,.help-fab{transition:none}}
+@media(max-width:700px){.bar{flex-direction:column}.stats{grid-template-columns:1fr 1fr}.cmp{grid-template-columns:1fr}.help-fab{right:14px;bottom:14px;padding:11px 17px}}
 @media(max-width:600px){#homeScreen>div{grid-template-columns:1fr!important}}
 </style>
 </head>
@@ -82,20 +116,22 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
 
 <div id="homeScreen" class="import-wrap">
   <h1>书签管理工具</h1>
-  <p class="desc">从 Safari 导出书签，转换格式，上传到 GitHub Gist 云端备份，或对比两份书签文件。</p>
+  <p class="desc">浏览器书签的<b>格式转换</b>、<b>云端备份</b>与<b>对比合并</b>工具。换浏览器、备份书签、合并多设备书签都能用。全程在本地浏览器完成，数据不上传服务器。</p>
 
-  <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr;margin-bottom:20px">
+  <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr;margin-bottom:18px">
     <div class="feature-card" onclick="showGistMode()" style="cursor:pointer;border:2px solid var(--ln);border-radius:16px;padding:24px;background:#fff;transition:border-color .15s">
-      <div style="font-size:32px;margin-bottom:8px">☁️</div>
-      <h3 style="margin:0 0 8px;font-size:18px">Gist 云端备份</h3>
-      <p style="margin:0;color:var(--mt);font-size:13px">导入书签 → 转换格式 → 上传到 GitHub Gist 或从 Gist 下载</p>
+      <div style="font-size:34px;margin-bottom:10px">☁️</div>
+      <h3 style="margin:0 0 8px;font-size:20px">Gist 云端备份 / 转格式</h3>
+      <p style="margin:0;color:var(--mt);font-size:14.5px;line-height:1.6">导入书签 → 转成任意浏览器格式 → 下载到本地，或备份到 GitHub Gist 云端</p>
     </div>
     <div class="feature-card" onclick="showCompareMode()" style="cursor:pointer;border:2px solid var(--ln);border-radius:16px;padding:24px;background:#fff;transition:border-color .15s">
-      <div style="font-size:32px;margin-bottom:8px">⚖️</div>
-      <h3 style="margin:0 0 8px;font-size:18px">双向对比审核</h3>
-      <p style="margin:0;color:var(--mt);font-size:13px">导入两份书签 → 对比差异 → 审核合并 → 导出结果</p>
+      <div style="font-size:34px;margin-bottom:10px">⚖️</div>
+      <h3 style="margin:0 0 8px;font-size:20px">双向对比审核</h3>
+      <p style="margin:0;color:var(--mt);font-size:14.5px;line-height:1.6">导入两份书签 → 自动找出差异 → 逐条决定保留/删除/合并 → 导出干净结果</p>
     </div>
   </div>
+
+  <p style="text-align:center;color:var(--mt);font-size:14px;margin:0">第一次用？点右下角的 <b style="color:var(--ac)">使用说明</b>，了解每个功能怎么操作、名词都是什么意思。</p>
 </div>
 
 <div id="gistScreen" class="import-wrap hidden">
@@ -111,7 +147,7 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
   </div>
 
   <div id="gistActions" class="hidden" style="margin-top:20px">
-    <h3 style="margin:0 0 12px;font-size:16px">选择操作</h3>
+    <h3 style="margin:0 0 12px;font-size:17px">选择操作</h3>
     <div style="display:grid;gap:10px">
       <div style="display:flex;gap:8px;align-items:center">
         <select id="gistFormat" style="flex:1;border:1px solid var(--ln);border-radius:var(--r);padding:10px;background:#fff;font:inherit">
@@ -124,17 +160,17 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
         <button onclick="uploadGist()" class="go-btn" style="margin:0;width:auto;padding:10px 20px;background:var(--blu)">☁️ 上传到 Gist</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span style="color:var(--mt);font-size:13px">或带着这份数据去对比：</span>
-        <button onclick="sendToCompare('a')" style="border:1px solid var(--grn);color:var(--grn);background:var(--gbg);border-radius:var(--r);padding:8px 16px;font:600 13px inherit;cursor:pointer">⚖️ 用作 A 对比</button>
-        <button onclick="sendToCompare('b')" style="border:1px solid var(--blu);color:var(--blu);background:var(--bbg);border-radius:var(--r);padding:8px 16px;font:600 13px inherit;cursor:pointer">⚖️ 用作 B 对比</button>
+        <span style="color:var(--mt);font-size:14px">或带着这份数据去对比：</span>
+        <button onclick="sendToCompare('a')" style="border:1px solid var(--grn);color:var(--grn);background:var(--gbg);border-radius:var(--r);padding:8px 16px;font:600 14px inherit;cursor:pointer">⚖️ 用作 A 对比</button>
+        <button onclick="sendToCompare('b')" style="border:1px solid var(--blu);color:var(--blu);background:var(--bbg);border-radius:var(--r);padding:8px 16px;font:600 14px inherit;cursor:pointer">⚖️ 用作 B 对比</button>
       </div>
     </div>
-    <p style="color:var(--mt);font-size:12px;margin:12px 0 0">提示：上传到 Gist 需要 GitHub Personal Access Token（权限：gist）<span id="tokenStatusGist"></span></p>
+    <p style="color:var(--mt);font-size:13px;margin:12px 0 0">提示：上传到 Gist 需要 GitHub Personal Access Token（权限：gist）。不清楚就点右下角“使用说明”。<span id="tokenStatusGist"></span></p>
   </div>
 
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--ln)">
-    <h3 style="margin:0 0 12px;font-size:16px">📥 从 Gist 下载</h3>
-    <p style="color:var(--mt);font-size:13px;margin:0 0 12px">输入 Gist URL 或原始文件 URL，下载并转换为其他格式。</p>
+    <h3 style="margin:0 0 12px;font-size:17px">📥 从 Gist 下载</h3>
+    <p style="color:var(--mt);font-size:14px;margin:0 0 12px">输入 Gist URL 或原始文件 URL，下载并转换为其他格式。</p>
     <div style="display:flex;gap:8px">
       <input id="gistUrl" placeholder="https://gist.github.com/..." style="flex:1;border:1px solid var(--ln);border-radius:var(--r);padding:10px;background:#fff;font:inherit">
       <button onclick="fetchFromGist()" class="go-btn" style="margin:0;width:auto;padding:10px 20px">🔽 获取</button>
@@ -225,6 +261,108 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
   点击 📤 Gist 可直接上传到 GitHub Gist（需要 Personal Access Token，权限: gist）。<span id="tokenStatus"></span></p>
 </main>
 </div>
+
+<!-- 使用说明侧边栏 -->
+<button class="help-fab" id="helpFab" aria-label="打开使用说明" aria-controls="helpPanel" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.5 .9c0 1.9-2.8 2.4-2.8 2.4"/><line x1="12" y1="17.3" x2="12" y2="17.3"/></svg>
+  使用说明
+</button>
+<div class="help-mask" id="helpMask"></div>
+<aside class="help-panel" id="helpPanel" role="dialog" aria-modal="true" aria-labelledby="helpTitle" tabindex="-1" inert>
+  <div class="help-head">
+    <h2 id="helpTitle">使用说明</h2>
+    <button class="help-close" id="helpClose" aria-label="关闭使用说明">✕</button>
+  </div>
+  <div class="help-body">
+
+    <section class="help-sec">
+      <h3>🔖 这个工具是做什么的？</h3>
+      <p>一个整理<b>浏览器书签</b>的小工具，主要做三件事：把书签<b>转换成各浏览器认得的格式</b>、<b>备份到云端</b>、把<b>两份书签对比合并</b>成一份干净的。</p>
+      <p class="muted">全程在你自己的浏览器里运行，可以断网使用。书签数据<b>不会上传到任何服务器</b>——除非你主动点“上传到 Gist”，备份到你自己的 GitHub 账号。</p>
+    </section>
+
+    <section class="help-sec">
+      <h3>🎯 我能用它解决什么？</h3>
+      <ul>
+        <li><b>换浏览器</b>：Safari 的书签想搬到 Chrome / Edge，格式不通用？转一下就行。</li>
+        <li><b>备份书签</b>：把书签存到 GitHub 云端，换电脑或重装系统后还能找回。</li>
+        <li><b>合并去重</b>：手机和电脑、两个浏览器的书签不一样，想对比后合并成一份。</li>
+      </ul>
+    </section>
+
+    <section class="help-sec">
+      <h3>📤 第一步：从浏览器导出书签</h3>
+      <p class="muted">得先有一份书签文件，才能导入本工具。</p>
+      <ul>
+        <li><b>Chrome / Edge</b>：打开“书签管理器” → 右上角 ⋮ → 导出书签</li>
+        <li><b>Safari</b>：菜单栏“文件” → 导出 → 书签</li>
+        <li><b>Firefox</b>：“书签 → 管理书签” → 导入和备份 → 导出书签到 HTML</li>
+      </ul>
+    </section>
+
+    <section class="help-sec">
+      <h3>☁️ 功能一 · Gist 云端备份 / 转格式</h3>
+      <ol class="help-step">
+        <li>导入一份书签文件（HTML 或 BookmarkHub 的 JSON）</li>
+        <li>选一个目标格式</li>
+        <li>点“💾 下载”存到本地，或点“☁️ 上传到 Gist”备份到云端</li>
+      </ol>
+      <p class="muted">反过来也行：在“从 Gist 下载”里粘贴 Gist 链接，就能把云端书签取回来、再转成别的格式。</p>
+    </section>
+
+    <section class="help-sec">
+      <h3>⚖️ 功能二 · 双向对比审核</h3>
+      <p>导入 A、B 两份书签，工具自动找出它们的差异，你逐条决定怎么处理，最后导出合并好的结果。</p>
+      <ol class="help-step">
+        <li>分别导入 A、B 两份书签</li>
+        <li>点“开始对比审核”</li>
+        <li>逐条做决定，最后选格式导出</li>
+      </ol>
+      <p>差异分三类：</p>
+      <ul>
+        <li><b>A 独有 / B 独有</b>：只在其中一份里出现的书签。</li>
+        <li><b>共同差异</b>：网址相同，但标题或所在文件夹不一样。</li>
+      </ul>
+      <p>每条可以选的操作：</p>
+      <ul>
+        <li><b>保留 / 删除</b>：留下或丢弃这一条。</li>
+        <li><b>→ A / → B</b>：把这条<b>同步</b>给缺它的那一侧。</li>
+        <li><b>用 A / 用 B</b>：网址相同时，统一采用 A 或 B 的标题和目录。</li>
+      </ul>
+      <p class="muted">导出时，“审核后的合并结果”是按你的决策生成的；“原始文件”是某一侧的完整内容、不含任何修改。</p>
+    </section>
+
+    <section class="help-sec">
+      <h3>🗂️ 四种格式我该选哪个？</h3>
+      <div class="help-kv">
+        <b>Edge/Chrome HTML</b><span>导入 Chrome、Edge、Firefox</span>
+        <b>Safari HTML</b><span>导入苹果 Safari</span>
+        <b>BookmarkHub.txt</b><span>配合 BookmarkHub 扩展，或上传 Gist</span>
+        <b>树形 JSON</b><span>通用备份，或留给程序处理</span>
+      </div>
+      <p class="muted">不确定就选目标浏览器对应的那个；只是想留个备份，选“树形 JSON”。</p>
+    </section>
+
+    <section class="help-sec">
+      <h3>📖 名词解释（看不懂的看这里）</h3>
+      <p><span class="help-term">书签 HTML 文件</span> — 浏览器“导出书签”生成的标准文件，扩展名 .html。几乎所有浏览器都能导入导出它，是书签搬家的通用中转格式。</p>
+      <p><span class="help-term">GitHub Gist</span> — GitHub 提供的“在线文本片段”服务，免费。本工具把它当云盘，用来存放书签文件；设为私有后只有你自己看得到。</p>
+      <p><span class="help-term">Personal Access Token（PAT，访问令牌）</span> — GitHub 的一把“专用钥匙”，上传到 Gist 时用它来证明是你本人。创建时<b>只需勾选 gist 一项权限</b>。本工具把它存在你浏览器本地，不会发给别人。<br>获取路径：GitHub → Settings → Developer settings → Personal access tokens。</p>
+      <p><span class="help-term">BookmarkHub</span> — 一个开源浏览器扩展，能把书签自动同步到 GitHub Gist。它备份出来的是 .txt 文件（内容其实是 JSON）。如果你在用这个扩展，就选 BookmarkHub.txt 格式。</p>
+    </section>
+
+    <section class="help-sec">
+      <h3>🔒 隐私与安全</h3>
+      <ul>
+        <li>整个工具就是<b>单个网页文件</b>，解析、转换都在你浏览器本地完成。</li>
+        <li>不联网也能用；只有“上传 / 从 Gist 下载”时才会访问 GitHub。</li>
+        <li>上传只会传到<b>你自己的</b> GitHub 账号，默认是私有 Gist。</li>
+        <li>GitHub Token 只存在浏览器本地，可随时一键清除。</li>
+      </ul>
+    </section>
+
+  </div>
+</aside>
 
 <script>
 const ROOT=new Set(['个人收藏','收藏夹栏','Favorites Bar','Bookmarks Bar','书签栏','其他书签','Other Bookmarks']);
@@ -1126,6 +1264,35 @@ function hideLoading(){
 
 window.showLoading=showLoading;
 window.hideLoading=hideLoading;
+
+// ===== 使用说明侧边栏 =====
+(function(){
+  const fab=document.getElementById('helpFab');
+  const panel=document.getElementById('helpPanel');
+  const mask=document.getElementById('helpMask');
+  const closeBtn=document.getElementById('helpClose');
+  if(!fab||!panel||!mask)return;
+  let lastFocus=null;
+  function open(){
+    lastFocus=document.activeElement;
+    panel.classList.add('show');
+    mask.classList.add('show');
+    panel.removeAttribute('inert');
+    fab.setAttribute('aria-expanded','true');
+    panel.focus();
+  }
+  function close(){
+    panel.classList.remove('show');
+    mask.classList.remove('show');
+    panel.setAttribute('inert','');
+    fab.setAttribute('aria-expanded','false');
+    if(lastFocus&&typeof lastFocus.focus==='function')lastFocus.focus();
+  }
+  fab.addEventListener('click',open);
+  closeBtn.addEventListener('click',close);
+  mask.addEventListener('click',close);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.classList.contains('show'))close()});
+})();
 
 </script>
 </body>
