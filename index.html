@@ -173,6 +173,7 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
     <div style="display:grid;gap:10px">
       <div style="display:flex;gap:8px;align-items:center">
         <select id="gistFormat" style="flex:1;border:1px solid var(--ln);border-radius:var(--r);padding:10px;background:#fff;font:inherit">
+          <option value="raw">原始文件（原样上传）</option>
           <option value="bookmarkhub">BookmarkHub.txt</option>
           <option value="edge">Edge/Chrome HTML</option>
           <option value="safari">Safari HTML</option>
@@ -1223,7 +1224,7 @@ function backToHome(){
 }
 
 // Gist mode globals
-let GIST_DATA={bookmarks:null,filename:''};
+let GIST_DATA={bookmarks:null,filename:'',rawText:'',rawFmt:''};
 
 // Gist file upload
 const dropGist=document.getElementById('dropGist');
@@ -1247,6 +1248,8 @@ function loadGistFile(file){
       const parsed=autoParse(r.result);
       GIST_DATA.bookmarks=parsed.bm;
       GIST_DATA.filename=file.name;
+      GIST_DATA.rawText=r.result;
+      GIST_DATA.rawFmt=parsed.fmt;
       nameGist.textContent=`${file.name} (${parsed.fmt}, ${parsed.bm.length} 个书签)`;
       document.getElementById('gistActions').classList.remove('hidden');
     }catch(e){
@@ -1259,6 +1262,15 @@ function loadGistFile(file){
 function downloadGist(){
   if(!GIST_DATA.bookmarks){alert('请先导入书签文件');return}
   const fmt=document.getElementById('gistFormat').value;
+
+  if(fmt==='raw'){
+    if(!GIST_DATA.rawText){alert('没有原始文件数据');return}
+    const isJson=GIST_DATA.rawFmt==='JSON';
+    dlFile(GIST_DATA.rawText,GIST_DATA.filename||('bookmarks'+(isJson?'.json':'.html')),
+      isJson?'application/json;charset=utf-8':'text/html;charset=utf-8');
+    return;
+  }
+
   const tree=buildTree(GIST_DATA.bookmarks,true);
   let content,filename,mime;
 
@@ -1287,6 +1299,16 @@ async function uploadGist(){
   if(!GIST_DATA.bookmarks){alert('请先导入书签文件');return}
 
   const fmt=document.getElementById('gistFormat').value;
+
+  if(fmt==='raw'){
+    if(!GIST_DATA.rawText){alert('没有原始文件数据');return}
+    const rawFmt=GIST_DATA.rawFmt||'html';
+    const ext=rawFmt==='JSON'?'.json':'.html';
+    const desc='Bookmarks raw export ('+rawFmt+')';
+    await uploadToGistShared(GIST_DATA.rawText,GIST_DATA.filename||('bookmarks'+ext),desc,rawFmt.toLowerCase());
+    return;
+  }
+
   const tree=buildTree(GIST_DATA.bookmarks,true);
   const p=buildExportPayload(tree,fmt);
   await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
