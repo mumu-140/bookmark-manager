@@ -37,12 +37,16 @@ function init() {
   // 监听格式选择
   formatBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      console.log('Format button clicked:', btn.dataset.format);
       formatBtns.forEach(b => b.style.background = 'white');
       btn.style.background = '#e8f5ee';
       btn.style.borderColor = '#1d7a50';
       selectedFormat = btn.dataset.format;
+      console.log('Selected format:', selectedFormat);
     });
   });
+
+  console.log('Format buttons initialized:', formatBtns.length);
 
   // 默认选中第一个格式
   formatBtns[0].click();
@@ -50,8 +54,13 @@ function init() {
   // 选择文件夹
   selectFoldersBtn.addEventListener('click', openFolderPicker);
 
+  console.log('Download button:', downloadBtn);
+
   // 下载
-  downloadBtn.addEventListener('click', handleDownload);
+  downloadBtn.addEventListener('click', () => {
+    console.log('Download button clicked!');
+    handleDownload();
+  });
 
   // 上传到 Gist
   uploadGistBtn.addEventListener('click', handleUploadGist);
@@ -146,28 +155,38 @@ async function getBookmarksToExport() {
  * 处理下载
  */
 async function handleDownload() {
+  console.log('handleDownload called');
+  console.log('selectedFormat:', selectedFormat);
+
   downloadBtn.disabled = true;
   downloadBtn.textContent = '提取中...';
 
   try {
+    console.log('Getting bookmarks to export...');
     const folders = await getBookmarksToExport();
+    console.log('Folders:', folders);
 
     let content, filename, mimeType;
 
+    console.log('Exporting format:', selectedFormat);
+
     switch (selectedFormat) {
       case 'bookmarkhub':
+        console.log('Exporting to BookmarkHub...');
         content = JSON.stringify(exportToBookmarkHub(folders), null, 2);
         filename = `bookmarks-${Date.now()}.BookmarkHub.txt`;
         mimeType = 'application/json';
         break;
 
       case 'html':
+        console.log('Exporting to HTML...');
         content = exportToChromiumHtml(folders);
         filename = `bookmarks-${Date.now()}.html`;
         mimeType = 'text/html';
         break;
 
       case 'json':
+        console.log('Exporting to JSON...');
         content = JSON.stringify({
           schema: 'bookmark-tree/v1',
           exportDate: new Date().toISOString(),
@@ -176,7 +195,12 @@ async function handleDownload() {
         filename = `bookmarks-${Date.now()}.tree.json`;
         mimeType = 'application/json';
         break;
+
+      default:
+        throw new Error('未知的导出格式: ' + selectedFormat);
     }
+
+    console.log('Creating download...', filename);
 
     // 下载文件
     const blob = new Blob([content], { type: mimeType });
@@ -187,6 +211,8 @@ async function handleDownload() {
     a.click();
     URL.revokeObjectURL(url);
 
+    console.log('Download completed');
+
     downloadBtn.textContent = '✓ 下载成功';
     setTimeout(() => {
       downloadBtn.disabled = false;
@@ -194,6 +220,7 @@ async function handleDownload() {
     }, 2000);
 
   } catch (error) {
+    console.error('Download error:', error);
     alert('提取失败: ' + error.message);
     downloadBtn.disabled = false;
     downloadBtn.textContent = '💾 下载到本地';
