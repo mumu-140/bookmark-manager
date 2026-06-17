@@ -395,33 +395,43 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
     <h3>🧭 终端一键导出 Safari 书签</h3>
     <p class="safari-desc">打开 Mac 的「终端」应用，粘贴下面的命令并回车。它会把 Safari 书签导出为标准 HTML 文件，保存到「下载」文件夹。</p>
     <div class="safari-code-wrap">
-      <pre class="safari-code" id="safariCmd">python3 -c '
+      <pre class="safari-code" id="safariCmd">cat &gt; /tmp/_safari_bm.py &lt;&lt; 'SCRIPT'
 import plistlib, html, os
+
 with open(os.path.expanduser("~/Library/Safari/Bookmarks.plist"), "rb") as f:
     data = plistlib.load(f)
-lines = ["<!DOCTYPE NETSCAPE-Bookmark-file-1>",
-  "<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">",
-  "<TITLE>Bookmarks</TITLE>", "<H1>Bookmarks</H1>", "<DL><p>"]
+
+lines = [
+    "&lt;!DOCTYPE NETSCAPE-Bookmark-file-1&gt;",
+    '&lt;META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8"&gt;',
+    "&lt;TITLE&gt;Bookmarks&lt;/TITLE&gt;",
+    "&lt;H1&gt;Bookmarks&lt;/H1&gt;",
+    "&lt;DL&gt;&lt;p&gt;",
+]
+
 def walk(n, d=1):
     t = "  " * d
     for c in n.get("Children", []):
         if c.get("WebBookmarkType") == "WebBookmarkTypeLeaf":
             title = html.escape(c.get("URIDictionary", {}).get("title", ""))
             url = html.escape(c.get("URLString", ""))
-            lines.append(t + "<DT><A HREF=\"" + url + "\">" + title + "</A>")
+            lines.append(t + '&lt;DT&gt;&lt;A HREF="' + url + '"&gt;' + title + '&lt;/A&gt;')
         else:
             name = html.escape(c.get("Title", ""))
-            lines.append(t + "<DT><H3>" + name + "</H3>")
-            lines.append(t + "<DL><p>")
+            lines.append(t + "&lt;DT&gt;&lt;H3&gt;" + name + "&lt;/H3&gt;")
+            lines.append(t + "&lt;DL&gt;&lt;p&gt;")
             walk(c, d + 1)
-            lines.append(t + "</DL><p>")
+            lines.append(t + "&lt;/DL&gt;&lt;p&gt;")
+
 walk(data)
-lines.append("</DL><p>")
+lines.append("&lt;/DL&gt;&lt;p&gt;")
+
 out = os.path.expanduser("~/Downloads/safari-bookmarks.html")
 with open(out, "w", encoding="utf-8") as f:
     f.write("\n".join(lines))
 print("Done:", out)
-'</pre>
+SCRIPT
+python3 /tmp/_safari_bm.py &amp;&amp; rm /tmp/_safari_bm.py</pre>
       <button class="safari-copy" id="safariCopyBtn" onclick="copySafariCmd()">复制</button>
     </div>
     <ol>
