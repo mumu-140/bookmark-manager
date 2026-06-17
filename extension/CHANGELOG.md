@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.5.0] - 2026-06-17
+
+### Changed
+- **配置界面重构**：分离上传和下载配置，逻辑更清晰
+- **配置顺序优化**：上传模式 → 下载配置 → Token → 书签格式
+- **字段重命名**：
+  - `gistUrl` 拆分为 `uploadGistUrl`（上传目标）和 `downloadGistUrl`（下载源）
+  - 移除 `gistId`，从 `uploadGistUrl` 自动提取
+- **默认值调整**：上传模式默认为「新建 Gist」（更友好）
+
+### Added
+- 固定模式：填写「上传目标 Gist URL」而非 Gist ID
+- 自动提取：从 URL 自动提取 Gist ID
+- 双向同步支持：上传和下载可使用相同或不同的 Gist URL
+
+### Improved
+- 更清晰的配置说明文字
+- 更合理的验证逻辑
+- 更友好的默认设置（新用户推荐「新建 Gist」模式）
+
+### Technical
+- 新增 `extractGistId(url)` 函数
+- 配置存储结构优化
+- 更清晰的配置分类
+
 ## [1.4.0] - 2026-06-17
 
 ### Added
