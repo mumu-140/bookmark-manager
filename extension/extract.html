@@ -32,8 +32,114 @@
     }
 
     .container {
-      max-width: 800px;
+      max-width: 1400px;
       margin: 0 auto;
+    }
+
+    .main-layout {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .left-panel {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .right-panel {
+      width: 400px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      max-height: calc(100vh - 120px);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 20px;
+    }
+
+    .picker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .picker-header h3 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .close-btn:hover {
+      background: #f9f5ee;
+      color: var(--text);
+    }
+
+    .picker-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .quick-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .quick-btn:hover {
+      background: #f9f5ee;
+      border-color: var(--primary);
+    }
+
+    .picker-tree {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .picker-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    #pickerInfo {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .picker-footer .btn-primary {
+      width: auto;
+      margin: 0;
+      padding: 10px 20px;
     }
 
     h1 {
@@ -179,6 +285,78 @@
       border-color: var(--primary);
       background: #f9f5ee;
     }
+
+    /* 树形节点样式 */
+    .tree-node {
+      padding: 8px;
+      border-radius: 6px;
+      margin: 2px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tree-node:hover {
+      background: #f9f5ee;
+    }
+
+    .tree-node.selected {
+      background: #e8f5ee;
+      border-left: 3px solid #1d7a50;
+    }
+
+    .tree-node input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    .tree-node-label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .tree-node-count {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .tree-children {
+      margin-left: 24px;
+    }
+
+    .tree-children.collapsed {
+      display: none;
+    }
+
+    .toggle-btn {
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 16px;
+      transition: transform 0.15s;
+    }
+
+    .toggle-btn.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .toggle-btn:hover {
+      color: var(--text);
+    }
+
+    .no-children {
+      width: 20px;
+    }
   </style>
 </head>
 <body>
@@ -186,62 +364,86 @@
     <h1>📤 提取浏览器书签</h1>
     <p class="subtitle">从当前浏览器提取书签，导出为文件或上传到 Gist</p>
 
-    <div class="card">
-      <div class="section-title">1. 选择提取范围</div>
-      <div class="option-group">
-        <label class="option">
-          <input type="radio" name="range" value="all" checked>
-          <div class="option-content">
-            <div class="option-title">📚 提取所有书签</div>
-            <div class="option-desc">包括书签栏、其他书签等所有文件夹</div>
+    <div class="main-layout">
+      <!-- 左侧：主要操作区 -->
+      <div class="left-panel">
+        <div class="card">
+          <div class="section-title">1. 选择提取范围</div>
+          <div class="option-group">
+            <label class="option">
+              <input type="radio" name="range" value="all" checked>
+              <div class="option-content">
+                <div class="option-title">📚 提取所有书签</div>
+                <div class="option-desc">包括书签栏、其他书签等所有文件夹</div>
+              </div>
+            </label>
+
+            <label class="option">
+              <input type="radio" name="range" value="select">
+              <div class="option-content">
+                <div class="option-title">📁 选择特定文件夹</div>
+                <div class="option-desc">自定义选择要提取的文件夹（支持多选）</div>
+              </div>
+            </label>
           </div>
-        </label>
 
-        <label class="option">
-          <input type="radio" name="range" value="select">
-          <div class="option-content">
-            <div class="option-title">📁 选择特定文件夹</div>
-            <div class="option-desc">自定义选择要提取的文件夹（支持多选）</div>
+          <div class="selected-info" id="selectedInfo">
+            已选择: 0 个文件夹，共 0 个书签
           </div>
-        </label>
+        </div>
+
+        <div class="card">
+          <div class="section-title">2. 选择导出格式</div>
+          <div class="format-options">
+            <button class="format-btn" data-format="bookmarkhub">
+              📦 BookmarkHub JSON
+            </button>
+            <button class="format-btn" data-format="html">
+              📄 Chromium HTML
+            </button>
+            <button class="format-btn" data-format="json">
+              🌲 树形 JSON
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">3. 导出</div>
+          <button class="btn-primary" id="downloadBtn">
+            💾 下载到本地
+          </button>
+          <button class="btn-secondary" id="uploadGistBtn">
+            ☁️ 上传到 Gist
+          </button>
+        </div>
       </div>
 
-      <div class="selected-info" id="selectedInfo">
-        已选择: 0 个文件夹，共 0 个书签
+      <!-- 右侧：文件夹选择器 -->
+      <div class="right-panel" id="pickerPanel" style="display: none;">
+        <div class="picker-header">
+          <h3>选择文件夹</h3>
+          <button class="close-btn" id="closePicker">✕</button>
+        </div>
+        <div class="picker-actions">
+          <button class="quick-btn" id="selectAllBtn">全选</button>
+          <button class="quick-btn" id="deselectAllBtn">取消全选</button>
+          <button class="quick-btn" id="selectBarBtn">仅书签栏</button>
+          <button class="quick-btn" id="expandAllBtn">展开全部</button>
+          <button class="quick-btn" id="collapseAllBtn">折叠全部</button>
+        </div>
+        <div class="picker-tree" id="bookmarkTree">
+          加载中...
+        </div>
+        <div class="picker-footer">
+          <div id="pickerInfo">已选择: 0 个文件夹</div>
+          <button class="btn-primary" id="confirmBtn" disabled>✓ 确认选择</button>
+        </div>
       </div>
-
-      <button class="btn-secondary" id="selectFoldersBtn" style="display: none;">
-        📂 选择文件夹
-      </button>
-    </div>
-
-    <div class="card">
-      <div class="section-title">2. 选择导出格式</div>
-      <div class="format-options">
-        <button class="format-btn" data-format="bookmarkhub">
-          📦 BookmarkHub JSON
-        </button>
-        <button class="format-btn" data-format="html">
-          📄 Chromium HTML
-        </button>
-        <button class="format-btn" data-format="json">
-          🌲 树形 JSON
-        </button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="section-title">3. 导出</div>
-      <button class="btn-primary" id="downloadBtn">
-        💾 下载到本地
-      </button>
-      <button class="btn-secondary" id="uploadGistBtn">
-        ☁️ 上传到 Gist
-      </button>
     </div>
   </div>
 
   <script src="extract.js"></script>
+  <script src="extract-picker-embed.js"></script>
   <script src="extract-page.js"></script>
 </body>
 </html>

@@ -1,12 +1,17 @@
 /**
- * 提取书签页面逻辑
+ * 提取书签页面逻辑（内嵌文件夹选择器）
  */
 
 let selectedFolders = null;
 let selectedFormat = 'bookmarkhub';
+let bookmarkTree = null;
+let selectedIds = new Set();
+let collapsedIds = new Set();
 
 // DOM 元素（延迟获取，确保 DOM 已加载）
-let rangeRadios, selectFoldersBtn, selectedInfo, formatBtns, downloadBtn, uploadGistBtn;
+let rangeRadios, pickerPanel, selectedInfo, formatBtns, downloadBtn, uploadGistBtn;
+let closePicker, selectAllBtn, deselectAllBtn, selectBarBtn, expandAllBtn, collapseAllBtn;
+let bookmarkTreeContainer, pickerInfo, confirmBtn;
 
 /**
  * 初始化
@@ -14,15 +19,26 @@ let rangeRadios, selectFoldersBtn, selectedInfo, formatBtns, downloadBtn, upload
 function init() {
   // 获取 DOM 元素
   rangeRadios = document.querySelectorAll('input[name="range"]');
-  selectFoldersBtn = document.getElementById('selectFoldersBtn');
+  pickerPanel = document.getElementById('pickerPanel');
   selectedInfo = document.getElementById('selectedInfo');
   formatBtns = document.querySelectorAll('.format-btn');
   downloadBtn = document.getElementById('downloadBtn');
   uploadGistBtn = document.getElementById('uploadGistBtn');
 
-  if (!selectFoldersBtn || !downloadBtn || !uploadGistBtn || formatBtns.length === 0) {
+  // 选择器元素
+  closePicker = document.getElementById('closePicker');
+  selectAllBtn = document.getElementById('selectAllBtn');
+  deselectAllBtn = document.getElementById('deselectAllBtn');
+  selectBarBtn = document.getElementById('selectBarBtn');
+  expandAllBtn = document.getElementById('expandAllBtn');
+  collapseAllBtn = document.getElementById('collapseAllBtn');
+  bookmarkTreeContainer = document.getElementById('bookmarkTree');
+  pickerInfo = document.getElementById('pickerInfo');
+  confirmBtn = document.getElementById('confirmBtn');
+
+  if (!pickerPanel || !downloadBtn || !uploadGistBtn || formatBtns.length === 0) {
     console.error('Failed to find required DOM elements:', {
-      selectFoldersBtn: !!selectFoldersBtn,
+      pickerPanel: !!pickerPanel,
       downloadBtn: !!downloadBtn,
       uploadGistBtn: !!uploadGistBtn,
       formatBtns: formatBtns.length
@@ -51,10 +67,14 @@ function init() {
   // 默认选中第一个格式
   formatBtns[0].click();
 
-  // 选择文件夹
-  selectFoldersBtn.addEventListener('click', openFolderPicker);
-
-  console.log('Download button:', downloadBtn);
+  // 选择器按钮
+  closePicker.addEventListener('click', hidePickerPanel);
+  selectAllBtn.addEventListener('click', selectAll);
+  deselectAllBtn.addEventListener('click', deselectAll);
+  selectBarBtn.addEventListener('click', selectBookmarksBar);
+  expandAllBtn.addEventListener('click', expandAll);
+  collapseAllBtn.addEventListener('click', collapseAll);
+  confirmBtn.addEventListener('click', confirmSelection);
 
   // 下载
   downloadBtn.addEventListener('click', () => {
@@ -64,9 +84,6 @@ function init() {
 
   // 上传到 Gist
   uploadGistBtn.addEventListener('click', handleUploadGist);
-
-  // 监听来自选择器的消息
-  window.addEventListener('message', handlePickerMessage);
 }
 
 /**
@@ -76,51 +93,51 @@ function handleRangeChange(e) {
   const value = e.target.value;
 
   if (value === 'select') {
-    selectFoldersBtn.style.display = 'block';
-    selectedInfo.classList.remove('show');
-    selectedFolders = null;
+    showPickerPanel();
   } else {
-    selectFoldersBtn.style.display = 'none';
-    selectedInfo.classList.remove('show');
+    hidePickerPanel();
     selectedFolders = null;
+    selectedIds.clear();
   }
 }
 
 /**
- * 打开文件夹选择器
+ * 显示选择器面板
+ */
+async function showPickerPanel() {
+  pickerPanel.style.display = 'flex';
+
+  if (!bookmarkTree) {
+    bookmarkTreeContainer.textContent = '加载中...';
+    try {
+      bookmarkTree = await getBookmarkTree();
+      renderTree();
+    } catch (error) {
+      bookmarkTreeContainer.textContent = '加载失败: ' + error.message;
+    }
+  }
+}
+
+/**
+ * 隐藏选择器面板
+ */
+function hidePickerPanel() {
+  pickerPanel.style.display = 'none';
+}
+
+/**
+ * 打开文件夹选择器（旧方法，已废弃）
  */
 function openFolderPicker() {
-  chrome.windows.create({
-    url: chrome.runtime.getURL('picker.html'),
-    type: 'popup',
-    width: 600,
-    height: 600
-  });
+  // 不再使用弹窗，直接显示右侧面板
+  showPickerPanel();
 }
 
 /**
- * 处理选择器返回的消息
+ * 处理选择器返回的消息（旧方法，已废弃）
  */
 function handlePickerMessage(event) {
-  if (event.data.action === 'bookmarksSelected') {
-    selectedFolders = event.data.folders;
-
-    if (!selectedFolders || selectedFolders.length === 0) {
-      selectedInfo.textContent = '未选择任何文件夹';
-      selectedInfo.classList.remove('show');
-      return;
-    }
-
-    // 计算总书签数
-    const totalBookmarks = selectedFolders.reduce((sum, folder) => {
-      return sum + countBookmarksInTree(folder);
-    }, 0);
-
-    selectedInfo.textContent = `✓ 已选择 ${selectedFolders.length} 个文件夹，共 ${totalBookmarks} 个书签`;
-    selectedInfo.classList.add('show');
-
-    console.log('Selected folders:', selectedFolders.length, 'Total bookmarks:', totalBookmarks);
-  }
+  // 不再需要，直接在页面内处理
 }
 
 /**
