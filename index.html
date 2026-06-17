@@ -1150,7 +1150,9 @@ function buildExportPayload(tree,which){
 document.getElementById('btnGist').onclick=async()=>{
   const fmt=document.getElementById('exportType').value;
   if(fmt==='decisions'){
-    alert('请选择书签格式（A/B 侧），决策 JSON 不支持上传到 Gist');
+    const decisions=DATA.items.map(it=>({id:it.id,type:it.type,action:state.get(it.id).action,note:state.get(it.id).note,item:it}));
+    const payload={version:3,exportedAt:new Date().toISOString(),sourceFiles:{a:DATA.nameA,b:DATA.nameB},summary:DATA.summary,decisions};
+    await uploadToGistShared(JSON.stringify(payload,null,2),'bookmark-review-decisions.json','Bookmark review decisions','json');
     return;
   }
 
