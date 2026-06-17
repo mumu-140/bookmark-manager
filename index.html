@@ -1014,6 +1014,14 @@ document.getElementById('btnExport').onclick=()=>{
 /* ===== 共享 Gist 上传：格式检查 + 覆盖询问 ===== */
 function validateExport(content,fmt){
   if(!content||!content.trim())return '导出内容为空';
+  // 决策 JSON / 原始文件 → 只做基本检查，不做格式校验
+  if(fmt==='decisions'){
+    try{const d=JSON.parse(content);if(!d.decisions)return '决策 JSON 缺少 decisions 字段'}catch(e){return 'JSON 解析失败: '+e.message}
+    return null;
+  }
+  if(fmt==='rawfile'){
+    return null;
+  }
   if(fmt==='bookmarkhub'){
     try{
       const d=JSON.parse(content);
@@ -1149,26 +1157,26 @@ function buildExportPayload(tree,which){
 
 document.getElementById('btnGist').onclick=async()=>{
   const fmt=document.getElementById('exportType').value;
+
+  // ── 1. 决策 JSON ──
   if(fmt==='decisions'){
     const decisions=DATA.items.map(it=>({id:it.id,type:it.type,action:state.get(it.id).action,note:state.get(it.id).note,item:it}));
     const payload={version:3,exportedAt:new Date().toISOString(),sourceFiles:{a:DATA.nameA,b:DATA.nameB},summary:DATA.summary,decisions};
-    await uploadToGistShared(JSON.stringify(payload,null,2),'bookmark-review-decisions.json','Bookmark review decisions','json');
+    await uploadToGistShared(JSON.stringify(payload,null,2),'bookmark-review-decisions.json','Bookmark review decisions','decisions');
     return;
   }
 
-  // 导入的原始文件（原样上传，不重新序列化）
+  // ── 2. 导入的原始文件（原样上传，不重新序列化）──
   if(fmt==='rawfile_a'||fmt==='rawfile_b'){
     const isA=fmt==='rawfile_a';
     const raw=isA?rawA:rawB;
     const fn=isA?fnA:fnB;
     if(!raw){alert((isA?'A':'B')+' 侧未导入文件，无法上传');return;}
-    const ext=(fn.match(/\.(\w+)$/)||['','html'])[1];
-    const fmtMap={html:'html',htm:'html',json:'json',txt:'txt'};
-    await uploadToGistShared(raw,fn||('bookmarks.'+(fmtMap[ext]||'html')),'Original imported bookmarks file',fmtMap[ext]||ext);
+    await uploadToGistShared(raw,fn||'bookmarks.html','Original imported bookmarks file','rawfile');
     return;
   }
 
-  // 审核后的合并结果
+  // ── 3. 审核后的合并结果（单格式）──
   const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],a_bookmarkhub:['a','bookmarkhub'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json'],b_bookmarkhub:['b','bookmarkhub']};
   const sel=mapping[fmt];
   if(sel){
@@ -1179,7 +1187,7 @@ document.getElementById('btnGist').onclick=async()=>{
     return;
   }
 
-  // 原始未审核文件
+  // ── 4. 原始数据重新序列化（未经审核决策，但重新序列化）──
   const rawMapping={raw_a_edge:['a','edge'],raw_a_safari:['a','safari'],raw_a_json:['a','json'],raw_a_bookmarkhub:['a','bookmarkhub'],raw_b_edge:['b','edge'],raw_b_safari:['b','safari'],raw_b_json:['b','json'],raw_b_bookmarkhub:['b','bookmarkhub']};
   const rawSel=rawMapping[fmt];
   if(rawSel){
@@ -1190,7 +1198,8 @@ document.getElementById('btnGist').onclick=async()=>{
     return;
   }
 
-  alert('请选择具体的单个格式（不支持"全部"选项）');
+  // ── 其余（a_all / b_all / both_all 等多文件格式）不支持 Gist ──
+  alert('Gist 每次只能上传单个文件，请选择具体的单个格式（不支持"全部"选项）');
 };
 
 function updateTokenStatus(){
@@ -1323,7 +1332,7 @@ async function uploadGist(){
     const rawFmt=GIST_DATA.rawFmt||'html';
     const ext=rawFmt==='JSON'?'.json':'.html';
     const desc='Bookmarks raw export ('+rawFmt+')';
-    await uploadToGistShared(GIST_DATA.rawText,GIST_DATA.filename||('bookmarks'+ext),desc,rawFmt.toLowerCase());
+    await uploadToGistShared(GIST_DATA.rawText,GIST_DATA.filename||('bookmarks'+ext),desc,'rawfile');
     return;
   }
 
