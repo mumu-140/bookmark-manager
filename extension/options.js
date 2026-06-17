@@ -3,10 +3,10 @@
  */
 
 const form = document.getElementById('configForm');
-const gistUrlInput = document.getElementById('gistUrl');
+const uploadGistUrlInput = document.getElementById('uploadGistUrl');
+const downloadGistUrlInput = document.getElementById('downloadGistUrl');
+const uploadGistUrlGroup = document.getElementById('uploadGistUrlGroup');
 const githubTokenInput = document.getElementById('githubToken');
-const gistIdInput = document.getElementById('gistId');
-const gistIdGroup = document.getElementById('gistIdGroup');
 const saveBtn = document.getElementById('saveBtn');
 const testBtn = document.getElementById('testBtn');
 const alertBox = document.getElementById('alert');
@@ -26,14 +26,14 @@ function showAlert(message, type = 'info') {
 }
 
 /**
- * 根据上传模式更新 Gist ID 输入框的可见性
+ * 根据上传模式更新上传目标 Gist URL 输入框的可见性
  */
-function updateGistIdVisibility() {
+function updateUploadGistUrlVisibility() {
   const uploadMode = document.querySelector('input[name="uploadMode"]:checked')?.value;
   if (uploadMode === 'fixed') {
-    gistIdGroup.classList.remove('hidden');
+    uploadGistUrlGroup.style.display = 'block';
   } else {
-    gistIdGroup.classList.add('hidden');
+    uploadGistUrlGroup.style.display = 'none';
   }
 }
 
@@ -41,39 +41,45 @@ function updateGistIdVisibility() {
  * 加载已保存的配置
  */
 function loadConfig() {
-  chrome.storage.sync.get(['gistUrl', 'githubToken', 'preferredFormat', 'flattenTopFolder', 'uploadMode', 'gistId'], (result) => {
-    if (result.gistUrl) {
-      gistUrlInput.value = result.gistUrl;
+  chrome.storage.sync.get(['uploadGistUrl', 'downloadGistUrl', 'githubToken', 'preferredFormat', 'flattenTopFolder', 'uploadMode'], (result) => {
+    // 加载上传目标 Gist URL
+    if (result.uploadGistUrl) {
+      uploadGistUrlInput.value = result.uploadGistUrl;
     }
+
+    // 加载下载源 Gist URL
+    if (result.downloadGistUrl) {
+      downloadGistUrlInput.value = result.downloadGistUrl;
+    }
+
+    // 加载 Token
     if (result.githubToken) {
       githubTokenInput.value = result.githubToken;
     }
+
+    // 加载书签格式
     if (result.preferredFormat) {
       const radio = document.querySelector(`input[name="format"][value="${result.preferredFormat}"]`);
       if (radio) {
         radio.checked = true;
       }
     }
+
     // 加载展平选项（默认为 true）
     const flattenCheckbox = document.getElementById('flattenTopFolder');
     if (flattenCheckbox) {
       flattenCheckbox.checked = result.flattenTopFolder !== false;
     }
 
-    // 加载上传模式（默认为 fixed）
-    const uploadMode = result.uploadMode || 'fixed';
+    // 加载上传模式（默认为 new）
+    const uploadMode = result.uploadMode || 'new';
     const uploadModeRadio = document.querySelector(`input[name="uploadMode"][value="${uploadMode}"]`);
     if (uploadModeRadio) {
       uploadModeRadio.checked = true;
     }
 
-    // 加载 Gist ID
-    if (result.gistId) {
-      gistIdInput.value = result.gistId;
-    }
-
-    // 根据上传模式显示/隐藏 Gist ID 输入框
-    updateGistIdVisibility();
+    // 根据上传模式显示/隐藏上传目标 URL 输入框
+    updateUploadGistUrlVisibility();
   });
 }
 
@@ -83,28 +89,31 @@ function loadConfig() {
 function saveConfig(e) {
   e.preventDefault();
 
-  const gistUrl = gistUrlInput.value.trim();
+  const uploadGistUrl = uploadGistUrlInput.value.trim();
+  const downloadGistUrl = downloadGistUrlInput.value.trim();
   const githubToken = githubTokenInput.value.trim();
   const preferredFormat = document.querySelector('input[name="format"]:checked').value;
   const flattenTopFolder = document.getElementById('flattenTopFolder').checked;
   const uploadMode = document.querySelector('input[name="uploadMode"]:checked').value;
-  const gistId = gistIdInput.value.trim();
 
-  if (!gistUrl) {
-    showAlert('请输入 Gist URL', 'error');
+  // 验证：固定模式需要上传目标 URL
+  if (uploadMode === 'fixed' && !uploadGistUrl) {
+    showAlert('固定模式需要填写上传目标 Gist URL', 'error');
+    uploadGistUrlInput.focus();
     return;
   }
 
-  // 验证 URL 格式
-  if (!gistUrl.includes('gist.github.com') && !gistUrl.includes('githubusercontent.com')) {
-    showAlert('无效的 Gist URL。请使用 gist.github.com 或 raw.githubusercontent.com 域名', 'error');
-    return;
+  // 验证：固定模式的 URL 格式
+  if (uploadMode === 'fixed' && uploadGistUrl) {
+    if (!uploadGistUrl.includes('gist.github.com') && !uploadGistUrl.includes('githubusercontent.com')) {
+      showAlert('无效的 Gist URL。请使用 gist.github.com 或 raw.githubusercontent.com 域名', 'error');
+      return;
+    }
   }
 
-  // 如果是固定模式，验证 Gist ID
-  if (uploadMode === 'fixed' && !gistId) {
-    showAlert('固定模式需要填写 Gist ID', 'error');
-    gistIdInput.focus();
+  // 验证：下载源 URL 格式（如果填写了）
+  if (downloadGistUrl && !downloadGistUrl.includes('gist.github.com') && !downloadGistUrl.includes('githubusercontent.com')) {
+    showAlert('无效的下载源 Gist URL。请使用 gist.github.com 或 raw.githubusercontent.com 域名', 'error');
     return;
   }
 
@@ -113,12 +122,12 @@ function saveConfig(e) {
 
   chrome.storage.sync.set(
     {
-      gistUrl: gistUrl,
+      uploadGistUrl: uploadGistUrl,
+      downloadGistUrl: downloadGistUrl,
       githubToken: githubToken,
       preferredFormat: preferredFormat,
       flattenTopFolder: flattenTopFolder,
-      uploadMode: uploadMode,
-      gistId: gistId
+      uploadMode: uploadMode
     },
     () => {
       saveBtn.disabled = false;
@@ -132,10 +141,10 @@ function saveConfig(e) {
  * 测试连接
  */
 function testConnection() {
-  const gistUrl = gistUrlInput.value.trim();
+  const downloadGistUrl = downloadGistUrlInput.value.trim();
 
-  if (!gistUrl) {
-    showAlert('请先输入 Gist URL', 'error');
+  if (!downloadGistUrl) {
+    showAlert('请先输入下载源 Gist URL', 'error');
     return;
   }
 
@@ -150,7 +159,7 @@ function testConnection() {
 
   chrome.storage.sync.set(
     {
-      gistUrl: gistUrl,
+      downloadGistUrl: downloadGistUrl,
       githubToken: githubToken,
       preferredFormat: preferredFormat,
       flattenTopFolder: flattenTopFolder
@@ -183,7 +192,7 @@ testBtn.addEventListener('click', testConnection);
 
 // 监听上传模式变化
 document.querySelectorAll('input[name="uploadMode"]').forEach(radio => {
-  radio.addEventListener('change', updateGistIdVisibility);
+  radio.addEventListener('change', updateUploadGistUrlVisibility);
 });
 
 // 页面加载时加载配置

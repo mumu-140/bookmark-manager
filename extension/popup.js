@@ -78,12 +78,12 @@ function formatTime(timestamp) {
  * 加载配置状态
  */
 function loadStatus() {
-  chrome.storage.sync.get(['gistUrl', 'githubToken', 'lastSync', 'uploadMode', 'gistId'], (result) => {
+  chrome.storage.sync.get(['uploadGistUrl', 'downloadGistUrl', 'githubToken', 'lastSync', 'uploadMode'], (result) => {
     // 配置状态
-    const hasDownloadConfig = !!result.gistUrl;
-    const hasUploadConfig = !!result.githubToken && (result.uploadMode !== 'fixed' || !!result.gistId);
+    const hasDownloadConfig = !!result.downloadGistUrl;
+    const hasUploadConfig = !!result.githubToken && (result.uploadMode !== 'fixed' || !!result.uploadGistUrl);
 
-    if (hasDownloadConfig) {
+    if (hasDownloadConfig || hasUploadConfig) {
       configStatusEl.innerHTML = '<span class="status status-configured">✓ 已配置</span>';
     } else {
       configStatusEl.innerHTML = '<span class="status status-not-configured">未配置</span>';
@@ -95,11 +95,14 @@ function loadStatus() {
 
     // 提示信息
     if (!hasDownloadConfig && !hasUploadConfig) {
-      showMessage('请先点击"⚙️ 配置"按钮设置 Gist URL 和 Token', 'info');
+      showMessage('请先点击"⚙️ 配置"按钮进行配置', 'info');
     } else if (!hasDownloadConfig) {
-      showMessage('请先配置 Gist URL 以使用下载功能', 'info');
+      showMessage('请先配置下载源 Gist URL 以使用下载功能', 'info');
     } else if (!hasUploadConfig) {
-      showMessage('请先配置 GitHub Token 以使用上传功能', 'info');
+      const msg = result.uploadMode === 'fixed'
+        ? '请先配置 GitHub Token 和上传目标 Gist URL'
+        : '请先配置 GitHub Token 以使用上传功能';
+      showMessage(msg, 'info');
     }
 
     // 上次同步时间

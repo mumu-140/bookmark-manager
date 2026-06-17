@@ -12,15 +12,15 @@ importScripts('extract.js');
  */
 async function getConfig() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['gistUrl', 'githubToken', 'preferredFormat', 'lastSync', 'flattenTopFolder', 'uploadMode', 'gistId'], (result) => {
+    chrome.storage.sync.get(['uploadGistUrl', 'downloadGistUrl', 'githubToken', 'preferredFormat', 'lastSync', 'flattenTopFolder', 'uploadMode'], (result) => {
       resolve({
-        gistUrl: result.gistUrl || '',
+        uploadGistUrl: result.uploadGistUrl || '',
+        downloadGistUrl: result.downloadGistUrl || '',
         githubToken: result.githubToken || '',
         preferredFormat: result.preferredFormat || 'auto',
         lastSync: result.lastSync || 0,
         flattenTopFolder: result.flattenTopFolder !== false,  // 默认为 true
-        uploadMode: result.uploadMode || 'fixed',  // 默认为 fixed
-        gistId: result.gistId || ''
+        uploadMode: result.uploadMode || 'new'  // 默认为 new
       });
     });
   });
@@ -178,13 +178,13 @@ async function syncBookmarks(sendProgress) {
     sendProgress({ status: 'loading', message: '读取配置...' });
     const config = await getConfig();
 
-    if (!config.gistUrl) {
-      throw new Error('未配置 Gist URL。请先打开扩展选项页进行配置');
+    if (!config.downloadGistUrl) {
+      throw new Error('未配置下载源 Gist URL。请先打开扩展选项页进行配置');
     }
 
     // 2. 解析 Gist URL
     sendProgress({ status: 'loading', message: '解析 Gist URL...' });
-    const { rawUrl, filename } = await resolveGistUrl(config.gistUrl, config.githubToken);
+    const { rawUrl, filename } = await resolveGistUrl(config.downloadGistUrl, config.githubToken);
 
     // 3. 下载文件
     sendProgress({ status: 'loading', message: '下载书签文件...' });
@@ -305,6 +305,16 @@ async function createGist(content, filename, token, isPublic = false) {
 }
 
 /**
+ * 从 Gist URL 提取 Gist ID
+ */
+function extractGistId(url) {
+  // https://gist.github.com/username/abc123...
+  // https://gist.githubusercontent.com/username/abc123.../raw/...
+  const match = url.match(/gist\.github(?:usercontent)?\.com\/[^\/]+\/([a-f0-9]+)/i);
+  return match ? match[1] : null;
+}
+
+/**
  * 主上传函数
  */
 async function uploadBookmarks(sendProgress) {
@@ -338,11 +348,18 @@ async function uploadBookmarks(sendProgress) {
     // 4. 上传
     let result;
     if (config.uploadMode === 'fixed') {
-      if (!config.gistId) {
-        throw new Error('固定模式需要配置 Gist ID。请先打开扩展选项页进行配置');
+      if (!config.uploadGistUrl) {
+        throw new Error('固定模式需要配置上传目标 Gist URL。请先打开扩展选项页进行配置');
       }
+
+      // 从 URL 提取 Gist ID
+      const gistId = extractGistId(config.uploadGistUrl);
+      if (!gistId) {
+        throw new Error('无法从上传目标 URL 中提取 Gist ID。请检查 URL 格式');
+      }
+
       sendProgress({ status: 'loading', message: '更新 Gist...' });
-      result = await updateGist(config.gistId, content, filename, config.githubToken);
+      result = await updateGist(gistId, content, filename, config.githubToken);
     } else {
       sendProgress({ status: 'loading', message: '创建新 Gist...' });
       result = await createGist(content, filename, config.githubToken);
@@ -421,11 +438,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     (async () => {
       try {
         const config = await getConfig();
-        if (!config.gistUrl) {
-          throw new Error('未配置 Gist URL');
+        if (!config.downloadGistUrl) {
+          throw new Error('未配置下载源 Gist URL');
         }
 
-        const { rawUrl, filename } = await resolveGistUrl(config.gistUrl, config.githubToken);
+        const { rawUrl, filename } = await resolveGistUrl(config.downloadGistUrl, config.githubToken);
         const content = await downloadFile(rawUrl);
         const bookmarks = parseBookmarks(content, filename, config.preferredFormat);
         const count = countBookmarks(bookmarks);
