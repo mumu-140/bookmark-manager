@@ -499,7 +499,7 @@ function parseHTML(text){
 function parseJSON(text){
   const data=JSON.parse(text),nodes=data.nodes||data.bookmarks||(Array.isArray(data)?data:[]),bm=[];
   function walk(n,ps){
-    const t=n.title||n.name||'Untitled';
+    const t=ent(n.title||n.name||'Untitled');
     if(Array.isArray(n.children)){const cp=ROOT.has(t)?ps:[...ps,t];for(const c of n.children)walk(c,cp)}
     else if(n.url){const fp=ps.filter(p=>!ROOT.has(p));bm.push({title:t,url:n.url,rawParts:[...ps],pathParts:[...fp],path:fp.join(' / ')||'(根目录)'})}
   }
@@ -581,14 +581,16 @@ function trimPaths(bm,skip){
   });
 }
 
+let parsedA=null,parsedB=null;
+
 goBtn.onclick=()=>{
   try{
+    parsedA=autoParse(rawA);parsedB=autoParse(rawB);
     const skip=parseInt(document.getElementById('skipLevels').value)||0;
-    const a=autoParse(rawA),b=autoParse(rawB);
-    const aBm=trimPaths(a.bm,skip),bBm=trimPaths(b.bm,skip);
+    const aBm=trimPaths(parsedA.bm,skip),bBm=trimPaths(parsedB.bm,skip);
     const items=buildItems(aBm,bBm);
-    DATA={nameA:fnA,nameB:fnB,fmtA:a.fmt,fmtB:b.fmt,cntA:a.bm.length,cntB:b.bm.length,items,
-      allA:aBm,allB:bBm,origA:a.bm,origB:b.bm,
+    DATA={nameA:fnA,nameB:fnB,fmtA:parsedA.fmt,fmtB:parsedB.fmt,cntA:parsedA.bm.length,cntB:parsedB.bm.length,items,
+      allA:aBm,allB:bBm,
       summary:{bOnly:items.filter(i=>i.type==='b_only').length,aOnly:items.filter(i=>i.type==='a_only').length,diff:items.filter(i=>i.type==='diff').length,total:items.length}};
     state=new Map(items.map(it=>[it.id,{action:it.defaultAction,note:''}]));
     document.getElementById('compareScreen').classList.add('hidden');
@@ -604,24 +606,26 @@ document.getElementById('btnBack').onclick=()=>{
   document.getElementById('compareScreen').classList.remove('hidden');
 };
 
-document.getElementById('skipLevels').onchange=()=>{
-  if(!DATA||!DATA.origA)return;
-  const skip=parseInt(document.getElementById('skipLevels').value)||0;
-  const aBm=trimPaths(DATA.origA,skip),bBm=trimPaths(DATA.origB,skip);
-  const items=buildItems(aBm,bBm);
-  DATA.items=items;DATA.allA=aBm;DATA.allB=bBm;
-  DATA.summary={bOnly:items.filter(i=>i.type==='b_only').length,aOnly:items.filter(i=>i.type==='a_only').length,diff:items.filter(i=>i.type==='diff').length,total:items.length};
-  const newState=new Map();
-  for(const it of items){
-    const old=state?state.get(it.id):null;
-    newState.set(it.id,old||{action:it.defaultAction,note:''});
-  }
-  state=newState;
-  const skipNote=skip?`  ｜  已跳过顶层 ${skip} 层`:'';
-  document.getElementById('subInfo').textContent=
-    `A: ${DATA.nameA} (${DATA.fmtA}, ${DATA.cntA} 条)  ｜  B: ${DATA.nameB} (${DATA.fmtB}, ${DATA.cntB} 条)  ｜  已排除 小书签栏 和 javascript:${skipNote}`;
-  render();
-};
+document.getElementById('skipLevels').addEventListener('change',function(){
+  if(!parsedA||!parsedB)return;
+  try{
+    const skip=parseInt(this.value)||0;
+    const aBm=trimPaths(parsedA.bm,skip),bBm=trimPaths(parsedB.bm,skip);
+    const items=buildItems(aBm,bBm);
+    DATA.items=items;DATA.allA=aBm;DATA.allB=bBm;
+    DATA.summary={bOnly:items.filter(i=>i.type==='b_only').length,aOnly:items.filter(i=>i.type==='a_only').length,diff:items.filter(i=>i.type==='diff').length,total:items.length};
+    const newState=new Map();
+    for(const it of items){
+      const old=state?state.get(it.id):null;
+      newState.set(it.id,old||{action:it.defaultAction,note:''});
+    }
+    state=newState;
+    const skipNote=skip?`  ｜  已跳过顶层 ${skip} 层`:'';
+    document.getElementById('subInfo').textContent=
+      `A: ${DATA.nameA} (${DATA.fmtA}, ${DATA.cntA} 条)  ｜  B: ${DATA.nameB} (${DATA.fmtB}, ${DATA.cntB} 条)  ｜  已排除 小书签栏 和 javascript:${skipNote}`;
+    render();
+  }catch(e){alert('重新比较失败：'+e.message)}
+});
 
 /* ===== review ===== */
 const $l=document.getElementById('list'),$q=document.getElementById('q'),$ft=document.getElementById('fType'),$fs=document.getElementById('fStatus');
