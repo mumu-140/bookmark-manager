@@ -266,6 +266,10 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
           <option value="raw_b_json">B 原始 · 树形 JSON</option>
           <option value="raw_b_bookmarkhub">B 原始 · BookmarkHub.txt</option>
         </optgroup>
+        <optgroup label="─── 导入的原始文件（原样上传）───">
+          <option value="rawfile_a">A 侧原文件</option>
+          <option value="rawfile_b">B 侧原文件</option>
+        </optgroup>
       </select>
       <select id="skipLevels" title="忽略顶层目录差异">
         <option value="0">不跳过目录层</option>
@@ -1147,6 +1151,18 @@ document.getElementById('btnGist').onclick=async()=>{
   const fmt=document.getElementById('exportType').value;
   if(fmt==='decisions'){
     alert('请选择书签格式（A/B 侧），决策 JSON 不支持上传到 Gist');
+    return;
+  }
+
+  // 导入的原始文件（原样上传，不重新序列化）
+  if(fmt==='rawfile_a'||fmt==='rawfile_b'){
+    const isA=fmt==='rawfile_a';
+    const raw=isA?rawA:rawB;
+    const fn=isA?fnA:fnB;
+    if(!raw){alert((isA?'A':'B')+' 侧未导入文件，无法上传');return;}
+    const ext=(fn.match(/\.(\w+)$/)||['','html'])[1];
+    const fmtMap={html:'html',htm:'html',json:'json',txt:'txt'};
+    await uploadToGistShared(raw,fn||('bookmarks.'+(fmtMap[ext]||'html')),'Original imported bookmarks file',fmtMap[ext]||ext);
     return;
   }
 
