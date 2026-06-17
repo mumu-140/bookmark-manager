@@ -123,16 +123,6 @@ function handlePickerMessage(event) {
   }
 }
 
-    // 计算总书签数
-    const totalBookmarks = selectedFolders.reduce((sum, folder) => {
-      return sum + countBookmarksInTree(folder);
-    }, 0);
-
-    selectedInfo.textContent = `已选择: ${selectedFolders.length} 个文件夹，共 ${totalBookmarks} 个书签`;
-    selectedInfo.classList.add('show');
-  }
-}
-
 /**
  * 获取要导出的书签
  */
