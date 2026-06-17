@@ -272,6 +272,7 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
         <option value="2">跳过 2 层</option>
         <option value="3">跳过 3 层</option>
       </select>
+      <button id="btnRecompare" title="按当前跳层设置重新比较">重新比较</button>
       <button class="pri" id="btnExport">导出</button>
       <button id="btnGist" title="上传到 GitHub Gist（需要 Token）">📤 Gist</button>
       <button id="btnBack">重新导入</button>
@@ -490,7 +491,7 @@ function parseHTML(text){
       const hm=line.match(/HREF="([^"]*)"/i),tm=line.match(/<A[^>]*>(.*?)<\/A>/i);
       const url=hm?ent(hm[1]):'',title=tm?ent(tm[1]).trim():'Untitled';
       const parts=stack.filter(p=>!ROOT.has(p));
-      bm.push({title,url,rawParts:[...stack],pathParts:[...parts],path:parts.join(' / ')||'(根目录)'});
+      bm.push({title:title||url||'Untitled',url,rawParts:[...stack],pathParts:[...parts],path:parts.join(' / ')||'(根目录)'});
     }else if(/<dl/i.test(low)){if(pf!==null){stack.push(pf);pf=null}}
     else if(/<\/dl/i.test(low)){if(stack.length)stack.pop();pf=null}
   }
@@ -501,7 +502,7 @@ function parseJSON(text){
   function walk(n,ps){
     const t=ent(n.title||n.name||'Untitled');
     if(Array.isArray(n.children)){const cp=ROOT.has(t)?ps:[...ps,t];for(const c of n.children)walk(c,cp)}
-    else if(n.url){const fp=ps.filter(p=>!ROOT.has(p));bm.push({title:t,url:n.url,rawParts:[...ps],pathParts:[...fp],path:fp.join(' / ')||'(根目录)'})}
+    else if(n.url){const fp=ps.filter(p=>!ROOT.has(p));bm.push({title:t||n.url||'Untitled',url:n.url,rawParts:[...ps],pathParts:[...fp],path:fp.join(' / ')||'(根目录)'})}
   }
   for(const n of nodes)walk(n,[]);return bm;
 }
@@ -606,10 +607,10 @@ document.getElementById('btnBack').onclick=()=>{
   document.getElementById('compareScreen').classList.remove('hidden');
 };
 
-document.getElementById('skipLevels').addEventListener('change',function(){
+function recompare(){
   if(!parsedA||!parsedB)return;
   try{
-    const skip=parseInt(this.value)||0;
+    const skip=parseInt(document.getElementById('skipLevels').value)||0;
     const aBm=trimPaths(parsedA.bm,skip),bBm=trimPaths(parsedB.bm,skip);
     const items=buildItems(aBm,bBm);
     DATA.items=items;DATA.allA=aBm;DATA.allB=bBm;
@@ -625,7 +626,9 @@ document.getElementById('skipLevels').addEventListener('change',function(){
       `A: ${DATA.nameA} (${DATA.fmtA}, ${DATA.cntA} 条)  ｜  B: ${DATA.nameB} (${DATA.fmtB}, ${DATA.cntB} 条)  ｜  已排除 小书签栏 和 javascript:${skipNote}`;
     render();
   }catch(e){alert('重新比较失败：'+e.message)}
-});
+}
+document.getElementById('btnRecompare').onclick=recompare;
+document.getElementById('skipLevels').addEventListener('change',recompare);
 
 /* ===== review ===== */
 const $l=document.getElementById('list'),$q=document.getElementById('q'),$ft=document.getElementById('fType'),$fs=document.getElementById('fStatus');
