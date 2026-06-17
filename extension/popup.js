@@ -2,6 +2,8 @@
  * Popup Script - 弹出窗口逻辑
  */
 
+const mainView = document.getElementById('mainView');
+const importOptionsView = document.getElementById('importOptionsView');
 const uploadBtn = document.getElementById('uploadBtn');
 const uploadBtnText = document.getElementById('uploadBtnText');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -14,8 +16,17 @@ const helpBtn = document.getElementById('helpBtn');
 const compareBtn = document.getElementById('compareBtn');
 const extractBtn = document.getElementById('extractBtn');
 
+// 导入选项界面元素
+const structurePreview = document.getElementById('structurePreview');
+const totalCountEl = document.getElementById('totalCount');
+const folderSelectCompact = document.getElementById('folderSelectCompact');
+const targetFolderCompact = document.getElementById('targetFolderCompact');
+const confirmImportBtn = document.getElementById('confirmImportBtn');
+const cancelImportBtn = document.getElementById('cancelImportBtn');
+
 let isUploading = false;
 let isDownloading = false;
+let pendingBookmarksData = null; // 存储待导入的书签数据
 
 /**
  * 显示消息
@@ -30,6 +41,186 @@ function showMessage(text, type = 'info') {
  */
 function hideMessage() {
   messageEl.classList.remove('show');
+}
+
+/**
+ * 格式化时间
+ */
+function formatTime(timestamp) {
+  if (!timestamp) return '从未同步';
+
+  const now = Date.now();
+  const diff = now - timestamp;
+
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+  return `${Math.floor(diff / 86400000)} 天前`;
+}
+
+/**
+ * 统计书签数量
+ */
+function countBookmarks(nodes) {
+  let count = 0;
+  function walk(node) {
+    if (node.url) {
+      count++;
+    } else if (node.children) {
+      node.children.forEach(walk);
+    }
+  }
+  if (Array.isArray(nodes)) {
+    nodes.forEach(walk);
+  } else {
+    walk(nodes);
+  }
+  return count;
+}
+
+/**
+ * 生成结构预览
+ */
+function generateStructurePreview(nodes, indent = 0) {
+  let html = '';
+  const prefix = '  '.repeat(indent);
+
+  for (const node of nodes) {
+    if (node.children) {
+      const count = countBookmarks(node.children);
+      html += `<div class="structure-item folder">${prefix}└─ ${node.title} <span class="count">(${count} 个)</span></div>`;
+      if (indent === 0) {
+        html += generateStructurePreview(node.children, indent + 1);
+      }
+    }
+  }
+
+  return html;
+}
+
+/**
+ * 填充文件夹选择器
+ */
+function populateFolderSelect(nodes) {
+  targetFolderCompact.innerHTML = '';
+
+  function addOptions(nodes, indent = 0) {
+    const prefix = '  '.repeat(indent);
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (node.children) {
+        const count = countBookmarks(node.children);
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `${prefix}${node.title} (${count} 个)`;
+        targetFolderCompact.appendChild(option);
+      }
+    }
+  }
+
+  addOptions(nodes);
+}
+
+/**
+ * 显示导入选项界面
+ */
+function showImportOptions(bookmarks) {
+  pendingBookmarksData = bookmarks;
+
+  // 生成结构预览
+  structurePreview.innerHTML = generateStructurePreview(bookmarks);
+
+  // 统计总数
+  const totalCount = countBookmarks(bookmarks);
+  totalCountEl.textContent = totalCount;
+
+  // 填充文件夹选择器
+  populateFolderSelect(bookmarks);
+
+  // 智能默认选择
+  if (bookmarks.length === 1 && bookmarks[0].children) {
+    document.querySelector('input[value="flatten"]').checked = true;
+  } else {
+    document.querySelector('input[value="keep"]').checked = true;
+  }
+
+  updateRadioStyles();
+
+  // 切换界面
+  mainView.classList.add('hide');
+  importOptionsView.classList.add('show');
+}
+
+/**
+ * 隐藏导入选项界面
+ */
+function hideImportOptions() {
+  mainView.classList.remove('hide');
+  importOptionsView.classList.remove('show');
+  pendingBookmarksData = null;
+}
+
+/**
+ * 更新单选框样式
+ */
+function updateRadioStyles() {
+  document.querySelectorAll('.radio-option-compact').forEach(option => {
+    const radio = option.querySelector('input[type="radio"]');
+    if (radio.checked) {
+      option.classList.add('selected');
+    } else {
+      option.classList.remove('selected');
+    }
+  });
+
+  const selectedMode = document.querySelector('input[name="importMode"]:checked').value;
+  if (selectedMode === 'specific') {
+    folderSelectCompact.classList.add('show');
+  } else {
+    folderSelectCompact.classList.remove('show');
+  }
+}
+
+/**
+ * 确认导入
+ */
+function confirmImport() {
+  const importMode = document.querySelector('input[name="importMode"]:checked').value;
+  const selectedFolderIndex = targetFolderCompact.value;
+
+  let processedBookmarks = pendingBookmarksData;
+
+  // 根据选择处理书签
+  if (importMode === 'flatten') {
+    if (pendingBookmarksData.length === 1 && pendingBookmarksData[0].children) {
+      processedBookmarks = pendingBookmarksData[0].children;
+    }
+  } else if (importMode === 'specific') {
+    const selectedFolder = pendingBookmarksData[parseInt(selectedFolderIndex)];
+    if (selectedFolder && selectedFolder.children) {
+      processedBookmarks = selectedFolder.children;
+    }
+  }
+
+  // 隐藏选项界面
+  hideImportOptions();
+
+  // 发送确认导入消息
+  chrome.runtime.sendMessage({
+    action: 'confirmImport',
+    data: {
+      bookmarks: processedBookmarks,
+      mode: importMode
+    }
+  });
+}
+
+/**
+ * 取消导入
+ */
+function cancelImport() {
+  hideImportOptions();
+  chrome.runtime.sendMessage({ action: 'cancelImport' });
 }
 
 /**
@@ -169,7 +360,11 @@ function performDownload() {
  * 监听来自 background 的进度更新
  */
 chrome.runtime.onMessage.addListener((request) => {
-  if (request.action === 'uploadProgress') {
+  if (request.action === 'showImportOptions') {
+    // 显示导入选项界面
+    const { bookmarks } = request.data;
+    showImportOptions(bookmarks);
+  } else if (request.action === 'uploadProgress') {
     const { status, message, count, gistUrl, timestamp } = request.data;
 
     if (status === 'loading') {
@@ -288,6 +483,22 @@ compareBtn.addEventListener('click', openCompare);
 extractBtn.addEventListener('click', openExtract);
 optionsBtn.addEventListener('click', openOptions);
 helpBtn.addEventListener('click', openHelp);
+
+// 导入选项界面事件监听
+document.querySelectorAll('input[name="importMode"]').forEach(radio => {
+  radio.addEventListener('change', updateRadioStyles);
+});
+
+document.querySelectorAll('.radio-option-compact').forEach(option => {
+  option.addEventListener('click', () => {
+    const radio = option.querySelector('input[type="radio"]');
+    radio.checked = true;
+    updateRadioStyles();
+  });
+});
+
+confirmImportBtn.addEventListener('click', confirmImport);
+cancelImportBtn.addEventListener('click', cancelImport);
 
 // 页面加载时加载状态
 loadStatus();

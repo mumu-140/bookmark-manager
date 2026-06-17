@@ -200,22 +200,21 @@ async function syncBookmarks(sendProgress) {
       throw new Error('书签文件为空或解析失败');
     }
 
-    // 5. 打开选择对话框，等待用户选择
+    // 5. 发送书签数据到 popup，显示导入选项界面
     sendProgress({ status: 'loading', message: '等待选择导入方式...' });
 
-    // 将书签数据编码后传递给选择页面
-    const dataParam = encodeURIComponent(JSON.stringify(bookmarks));
-    const optionsUrl = chrome.runtime.getURL(`import-options.html?data=${dataParam}`);
-
-    // 打开选择页面
-    await chrome.windows.create({
-      url: optionsUrl,
-      type: 'popup',
-      width: 600,
-      height: 700
+    // 通过消息发送书签数据到 popup
+    chrome.runtime.sendMessage({
+      action: 'showImportOptions',
+      data: {
+        bookmarks: bookmarks
+      }
+    }).catch(() => {
+      // Popup 可能已关闭
+      throw new Error('请保持扩展弹窗打开');
     });
 
-    // 此时暂停执行，等待用户在选择页面确认
+    // 此时暂停执行，等待用户在选项界面确认
     // confirmImport 消息会触发实际的导入操作
 
   } catch (error) {

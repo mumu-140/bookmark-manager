@@ -202,50 +202,255 @@
       font-size: 11px;
       margin-top: 12px;
     }
+
+    /* 导入选项界面 */
+    #importOptionsView {
+      display: none;
+    }
+
+    #importOptionsView.show {
+      display: block;
+    }
+
+    #mainView.hide {
+      display: none;
+    }
+
+    .structure-preview {
+      background: #f9f5ee;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 12px;
+      line-height: 1.8;
+      margin: 12px 0;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .structure-item {
+      padding: 2px 0;
+    }
+
+    .structure-item.folder {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .structure-item.count {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .radio-group-compact {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .radio-option-compact {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 13px;
+    }
+
+    .radio-option-compact:hover {
+      background: #f9f5ee;
+      border-color: var(--primary);
+    }
+
+    .radio-option-compact.selected {
+      background: #fef4e0;
+      border-color: var(--primary);
+    }
+
+    .radio-option-compact input[type="radio"] {
+      margin-top: 2px;
+      cursor: pointer;
+    }
+
+    .radio-label-compact {
+      flex: 1;
+      line-height: 1.4;
+    }
+
+    .radio-label-compact strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .radio-label-compact span {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .folder-select-compact {
+      margin-top: 10px;
+      display: none;
+    }
+
+    .folder-select-compact.show {
+      display: block;
+    }
+
+    .folder-select-compact label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .folder-select-compact select {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .import-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .warning-compact {
+      background: #fef4e0;
+      border: 1px solid #a85c00;
+      border-radius: 6px;
+      padding: 8px;
+      margin: 10px 0;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .warning-compact strong {
+      color: #a85c00;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>🔖 Bookmark Gist Sync</h1>
-    <p class="subtitle">从 Gist 同步书签</p>
-  </div>
-
-  <div class="card">
-    <div class="info-row">
-      <span class="label">配置状态</span>
-      <span class="value" id="configStatus">
-        <span class="status status-not-configured">未配置</span>
-      </span>
+  <!-- 主界面 -->
+  <div id="mainView">
+    <div class="header">
+      <h1>🔖 Bookmark Gist Sync</h1>
+      <p class="subtitle">从 Gist 同步书签</p>
     </div>
-    <div class="info-row">
-      <span class="label">上次同步</span>
-      <span class="value" id="lastSync">从未同步</span>
+
+    <div class="card">
+      <div class="info-row">
+        <span class="label">配置状态</span>
+        <span class="value" id="configStatus">
+          <span class="status status-not-configured">未配置</span>
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="label">上次同步</span>
+        <span class="value" id="lastSync">从未同步</span>
+      </div>
+    </div>
+
+    <div class="sync-actions">
+      <button class="sync-button" id="uploadBtn">
+        <span id="uploadBtnText">📤 上传书签</span>
+      </button>
+      <button class="sync-button" id="downloadBtn">
+        <span id="downloadBtnText">📥 覆盖下载</span>
+      </button>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <div class="actions">
+      <button class="btn-secondary" id="compareBtn">📊 对比书签</button>
+      <button class="btn-secondary" id="extractBtn">📤 提取书签</button>
+    </div>
+
+    <div class="actions">
+      <button class="btn-secondary" id="optionsBtn">⚙️ 配置</button>
+      <button class="btn-secondary" id="helpBtn">❓ 帮助</button>
+    </div>
+
+    <div class="footer">
+      Token 仅存储在本地，不会上传
     </div>
   </div>
 
-  <div class="sync-actions">
-    <button class="sync-button" id="uploadBtn">
-      <span id="uploadBtnText">📤 上传书签</span>
-    </button>
-    <button class="sync-button" id="downloadBtn">
-      <span id="downloadBtnText">📥 覆盖下载</span>
-    </button>
-  </div>
+  <!-- 导入选项界面 -->
+  <div id="importOptionsView">
+    <div class="header">
+      <h1>📥 选择导入方式</h1>
+      <p class="subtitle">检测到书签结构</p>
+    </div>
 
-  <div id="message" class="message"></div>
+    <div class="card">
+      <h3 style="font-size: 13px; margin-bottom: 6px;">书签结构预览</h3>
+      <div class="structure-preview" id="structurePreview">
+        <!-- 动态生成 -->
+      </div>
+      <p style="color: var(--text-muted); font-size: 11px; margin-top: 6px;">
+        共 <strong id="totalCount">0</strong> 个书签
+      </p>
+    </div>
 
-  <div class="actions">
-    <button class="btn-secondary" id="compareBtn">📊 对比书签</button>
-    <button class="btn-secondary" id="extractBtn">📤 提取书签</button>
-  </div>
+    <div class="card">
+      <div class="radio-group-compact">
+        <label class="radio-option-compact" data-mode="keep">
+          <input type="radio" name="importMode" value="keep">
+          <span class="radio-label-compact">
+            <strong>保持原结构</strong>
+            <span>完整保留所有层级</span>
+          </span>
+        </label>
 
-  <div class="actions">
-    <button class="btn-secondary" id="optionsBtn">⚙️ 配置</button>
-    <button class="btn-secondary" id="helpBtn">❓ 帮助</button>
-  </div>
+        <label class="radio-option-compact" data-mode="flatten">
+          <input type="radio" name="importMode" value="flatten" checked>
+          <span class="radio-label-compact">
+            <strong>展平一层（推荐）</strong>
+            <span>移除顶层文件夹</span>
+          </span>
+        </label>
 
-  <div class="footer">
-    Token 仅存储在本地，不会上传
+        <label class="radio-option-compact" data-mode="specific">
+          <input type="radio" name="importMode" value="specific">
+          <span class="radio-label-compact">
+            <strong>只导入指定文件夹</strong>
+            <span>仅导入选中文件夹内容</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="folder-select-compact" id="folderSelectCompact">
+        <label for="targetFolderCompact">选择文件夹</label>
+        <select id="targetFolderCompact">
+          <!-- 动态生成 -->
+        </select>
+      </div>
+    </div>
+
+    <div class="warning-compact">
+      <strong>⚠️ 重要</strong> 将删除所有现有书签，不可撤销
+    </div>
+
+    <div class="import-actions">
+      <button class="sync-button" id="cancelImportBtn" style="background: white; color: var(--text); border: 1px solid var(--border);">
+        <span>取消</span>
+      </button>
+      <button class="sync-button" id="confirmImportBtn">
+        <span>确认导入</span>
+      </button>
+    </div>
   </div>
 
   <script src="popup.js"></script>

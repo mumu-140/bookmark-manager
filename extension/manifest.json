@@ -34,8 +34,7 @@
     {
       "resources": [
         "compare.html",
-        "extract.html",
-        "import-options.html"
+        "extract.html"
       ],
       "matches": ["<all_urls>"]
     }
