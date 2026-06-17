@@ -332,8 +332,6 @@ async function confirmSelection() {
   confirmBtn.textContent = '提取中...';
 
   try {
-    console.log('Selected IDs:', Array.from(selectedIds));
-
     // 提取选中的文件夹
     selectedFolders = [];
     for (const id of selectedIds) {
@@ -342,8 +340,6 @@ async function confirmSelection() {
         selectedFolders.push(folder);
       }
     }
-
-    console.log('Extracted folders:', selectedFolders.length);
 
     // 更新主界面显示
     const totalBookmarks = selectedFolders.reduce((sum, folder) => {
