@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>选择导入方式</title>
+  <style>
+    :root {
+      --bg: #f4f1ec;
+      --surface: #ffffff;
+      --border: #ddd4c8;
+      --text: #1a1714;
+      --text-muted: #6e665d;
+      --primary: #b05830;
+      --primary-hover: #8e3f1e;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      line-height: 1.6;
+      min-width: 480px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .structure-preview {
+      background: #f9f5ee;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      margin: 12px 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .structure-item {
+      padding: 2px 0;
+    }
+
+    .structure-item.folder {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .structure-item.count {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .radio-option:hover {
+      background: #f9f5ee;
+      border-color: var(--primary);
+    }
+
+    .radio-option input[type="radio"] {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    .radio-option input[type="radio"]:checked + .radio-label {
+      color: var(--primary);
+    }
+
+    .radio-option.selected {
+      background: #fef4e0;
+      border-color: var(--primary);
+    }
+
+    .radio-label {
+      flex: 1;
+    }
+
+    .radio-label strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .radio-label span {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .folder-select {
+      margin-top: 12px;
+      display: none;
+    }
+
+    .folder-select.show {
+      display: block;
+    }
+
+    .folder-select label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .folder-select select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #f9f5ee;
+    }
+
+    .warning {
+      background: #fef4e0;
+      border: 1px solid #a85c00;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 16px 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .warning strong {
+      color: #a85c00;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📥 选择导入方式</h1>
+    <p class="subtitle">检测到书签结构，请选择如何导入</p>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size: 15px; margin-bottom: 8px;">书签结构预览</h3>
+    <div class="structure-preview" id="structurePreview">
+      <!-- 动态生成 -->
+    </div>
+    <p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">
+      共 <strong id="totalCount">0</strong> 个书签
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="radio-group">
+      <label class="radio-option" data-mode="keep">
+        <input type="radio" name="importMode" value="keep">
+        <span class="radio-label">
+          <strong>保持原结构</strong>
+          <span>完整保留所有层级，包括顶层文件夹</span>
+        </span>
+      </label>
+
+      <label class="radio-option" data-mode="flatten">
+        <input type="radio" name="importMode" value="flatten" checked>
+        <span class="radio-label">
+          <strong>展平一层（推荐）</strong>
+          <span>移除顶层文件夹，直接导入子文件夹和书签</span>
+        </span>
+      </label>
+
+      <label class="radio-option" data-mode="specific">
+        <input type="radio" name="importMode" value="specific">
+        <span class="radio-label">
+          <strong>只导入指定文件夹</strong>
+          <span>仅导入选中文件夹内的内容</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="folder-select" id="folderSelect">
+      <label for="targetFolder">选择文件夹</label>
+      <select id="targetFolder">
+        <!-- 动态生成 -->
+      </select>
+    </div>
+  </div>
+
+  <div class="warning">
+    <strong>⚠️ 重要提示</strong><br>
+    导入操作将删除所有现有书签，此操作不可撤销。请确保已备份重要书签！
+  </div>
+
+  <div class="button-group">
+    <button class="btn-secondary" id="cancelBtn">取消</button>
+    <button class="btn-primary" id="confirmBtn">确认导入</button>
+  </div>
+
+  <script src="import-options.js"></script>
+</body>
+</html>

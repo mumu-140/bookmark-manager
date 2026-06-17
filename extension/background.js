@@ -194,49 +194,31 @@ async function syncBookmarks(sendProgress) {
     sendProgress({ status: 'loading', message: '解析书签数据...' });
     let bookmarks = parseBookmarks(content, filename, config.preferredFormat);
 
-    // 4.5. 如果启用了展平顶层文件夹选项，检查并展平
-    if (config.flattenTopFolder) {
-      const FAVORITES_NAMES = ['个人收藏', '收藏夹栏', 'Bookmarks Bar', 'Bookmarks bar', 'Favorites', 'Favourites'];
-
-      // 如果只有一个顶层文件夹，且名称匹配，则展平
-      if (bookmarks.length === 1 && bookmarks[0].children) {
-        const topFolder = bookmarks[0];
-        if (FAVORITES_NAMES.includes(topFolder.title.trim())) {
-          bookmarks = topFolder.children;
-          sendProgress({ status: 'loading', message: `已移除顶层"${topFolder.title}"文件夹...` });
-        }
-      }
-    }
-
     const count = countBookmarks(bookmarks);
 
     if (count === 0) {
       throw new Error('书签文件为空或解析失败');
     }
 
-    // 5. 删除现有书签
-    sendProgress({ status: 'loading', message: `删除现有书签...` });
-    await clearAllBookmarks();
+    // 5. 打开选择对话框，等待用户选择
+    sendProgress({ status: 'loading', message: '等待选择导入方式...' });
 
-    // 6. 导入新书签
-    sendProgress({ status: 'loading', message: `导入 ${count} 个书签...` });
-    const bookmarksBarId = await getBookmarksBarId();
-    await importBookmarks(bookmarks, bookmarksBarId);
+    // 将书签数据编码后传递给选择页面
+    const dataParam = encodeURIComponent(JSON.stringify(bookmarks));
+    const optionsUrl = chrome.runtime.getURL(`import-options.html?data=${dataParam}`);
 
-    // 7. 更新同步时间
-    const now = Date.now();
-    await saveConfig({ lastSync: now });
-
-    // 8. 成功
-    sendProgress({
-      status: 'success',
-      message: `同步成功！导入了 ${count} 个书签`,
-      count: count,
-      timestamp: now
+    // 打开选择页面
+    await chrome.windows.create({
+      url: optionsUrl,
+      type: 'popup',
+      width: 600,
+      height: 700
     });
 
+    // 此时暂停执行，等待用户在选择页面确认
+    // confirmImport 消息会触发实际的导入操作
+
   } catch (error) {
-    console.error('Sync failed:', error);
     sendProgress({
       status: 'error',
       message: error.message || '同步失败'
@@ -245,7 +227,7 @@ async function syncBookmarks(sendProgress) {
 }
 
 /**
- * 上传到 Gist（固定 ID 模式）
+ * 执行实际的导入操作（用户确认后）
  */
 async function updateGist(gistId, content, filename, token) {
   const apiUrl = `https://api.github.com/gists/${gistId}`;
@@ -386,6 +368,44 @@ async function uploadBookmarks(sendProgress) {
 }
 
 /**
+ * 执行实际的导入操作（用户确认后）
+ */
+async function performImport(bookmarks, sendProgress) {
+  try {
+    const count = countBookmarks(bookmarks);
+
+    // 1. 删除现有书签
+    sendProgress({ status: 'loading', message: `删除现有书签...` });
+    await clearAllBookmarks();
+
+    // 2. 获取书签栏 ID
+    const bookmarksBarId = await getBookmarksBarId();
+
+    // 3. 导入新书签
+    sendProgress({ status: 'loading', message: `导入新书签 (${count} 个)...` });
+    await importBookmarks(bookmarks, bookmarksBarId);
+
+    // 4. 保存同步时间
+    const timestamp = Date.now();
+    await saveConfig({ lastSync: timestamp });
+
+    // 5. 成功
+    sendProgress({
+      status: 'success',
+      message: `同步成功！已导入 ${count} 个书签`,
+      count: count,
+      timestamp: timestamp
+    });
+
+  } catch (error) {
+    sendProgress({
+      status: 'error',
+      message: error.message || '导入失败'
+    });
+  }
+}
+
+/**
  * 监听来自 popup 的消息
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -404,6 +424,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
 
     // 返回 true 表示异步响应
+    return true;
+  }
+
+  if (request.action === 'confirmImport') {
+    // 用户确认导入
+    const { bookmarks, mode } = request.data;
+
+    performImport(bookmarks, (progress) => {
+      // 发送进度更新到 popup
+      chrome.runtime.sendMessage({
+        action: 'downloadProgress',
+        data: progress
+      }).catch(() => {
+        // Popup 可能已关闭，忽略错误
+      });
+    }).then(() => {
+      sendResponse({ success: true });
+    });
+
+    return true;
+  }
+
+  if (request.action === 'cancelImport') {
+    // 用户取消导入
+    chrome.runtime.sendMessage({
+      action: 'downloadProgress',
+      data: {
+        status: 'error',
+        message: '已取消导入'
+      }
+    }).catch(() => {});
+
+    sendResponse({ success: true });
     return true;
   }
 
