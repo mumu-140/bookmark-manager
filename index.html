@@ -393,54 +393,46 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
 <div class="safari-modal-mask" id="safariModal" onclick="if(event.target===this)hideSafariHint()">
   <div class="safari-modal">
     <h3>🧭 终端一键导出 Safari 书签</h3>
-    <p class="safari-desc">打开 Mac 的「终端」应用，粘贴下面的命令并回车。它会把 Safari 书签导出为标准 HTML 文件，保存到「下载」文件夹。</p>
-    <div class="safari-code-wrap">
-      <pre class="safari-code" id="safariCmd">cat &gt; /tmp/_safari_bm.py &lt;&lt; 'SCRIPT'
+    <p class="safari-desc">打开 Mac 的「终端」应用，复制下方命令粘贴执行。Safari 书签会导出为标准 HTML 文件到「下载」文件夹。</p>
+    <script type="text/plain" id="safariCmdSrc">cat > /tmp/_safari_bm.py << 'SCRIPT'
 import plistlib, html, os
-
 with open(os.path.expanduser("~/Library/Safari/Bookmarks.plist"), "rb") as f:
     data = plistlib.load(f)
-
-lines = [
-    "&lt;!DOCTYPE NETSCAPE-Bookmark-file-1&gt;",
-    '&lt;META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8"&gt;',
-    "&lt;TITLE&gt;Bookmarks&lt;/TITLE&gt;",
-    "&lt;H1&gt;Bookmarks&lt;/H1&gt;",
-    "&lt;DL&gt;&lt;p&gt;",
-]
-
+lines = ["<!DOCTYPE NETSCAPE-Bookmark-file-1>",
+  '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+  "<TITLE>Bookmarks</TITLE>", "<H1>Bookmarks</H1>", "<DL><p>"]
 def walk(n, d=1):
     t = "  " * d
     for c in n.get("Children", []):
         if c.get("WebBookmarkType") == "WebBookmarkTypeLeaf":
             title = html.escape(c.get("URIDictionary", {}).get("title", ""))
             url = html.escape(c.get("URLString", ""))
-            lines.append(t + '&lt;DT&gt;&lt;A HREF="' + url + '"&gt;' + title + '&lt;/A&gt;')
+            lines.append(t + '<DT><A HREF="' + url + '">' + title + '</A>')
         else:
             name = html.escape(c.get("Title", ""))
-            lines.append(t + "&lt;DT&gt;&lt;H3&gt;" + name + "&lt;/H3&gt;")
-            lines.append(t + "&lt;DL&gt;&lt;p&gt;")
+            lines.append(t + '<DT><H3>' + name + '</H3>')
+            lines.append(t + '<DL><p>')
             walk(c, d + 1)
-            lines.append(t + "&lt;/DL&gt;&lt;p&gt;")
-
+            lines.append(t + '</DL><p>')
 walk(data)
-lines.append("&lt;/DL&gt;&lt;p&gt;")
-
+lines.append("</DL><p>")
 out = os.path.expanduser("~/Downloads/safari-bookmarks.html")
 with open(out, "w", encoding="utf-8") as f:
     f.write("\n".join(lines))
 print("Done:", out)
 SCRIPT
-python3 /tmp/_safari_bm.py &amp;&amp; rm /tmp/_safari_bm.py</pre>
+python3 /tmp/_safari_bm.py && rm /tmp/_safari_bm.py</script>
+    <div class="safari-code-wrap">
+      <pre class="safari-code" id="safariCmd"></pre>
       <button class="safari-copy" id="safariCopyBtn" onclick="copySafariCmd()">复制</button>
     </div>
     <ol>
       <li>打开<b>终端</b>（Spotlight 搜索"终端"或"Terminal"）</li>
-      <li>粘贴上方命令，按 <b>回车</b> 执行</li>
+      <li>粘贴命令，按 <b>回车</b> 执行</li>
       <li>回到本页，把生成的 <code>safari-bookmarks.html</code> 拖进导入区域</li>
     </ol>
-    <p class="safari-note"><b>权限提示：</b>macOS 默认禁止外部程序读取 Safari 数据。如果命令报 <code>PermissionError</code>，前往<b>系统设置 → 隐私与安全性 → 完全磁盘访问权限</b>，勾选「终端」后重新执行。</p>
-    <p class="safari-note"><b>不想折腾？</b>也可以直接在 Safari 菜单栏选「文件 → 导出 → 书签」，保存 HTML 文件后拖进本页导入，效果一样。</p>
+    <p class="safari-note"><b>权限提示：</b>若报 <code>PermissionError</code>，前往<b>系统设置 → 隐私与安全性 → 完全磁盘访问权限</b>，勾选「终端」后重试。</p>
+    <p class="safari-note"><b>不想折腾？</b>直接在 Safari 菜单栏选「文件 → 导出 → 书签」，保存后拖进本页导入，效果一样。</p>
     <button class="safari-modal-close" onclick="hideSafariHint()">知道了</button>
   </div>
 </div>
@@ -452,22 +444,17 @@ function showSafariHint(){
 }
 function hideSafariHint(){
   document.getElementById('safariModal').classList.remove('show');
-  // 重置复制按钮状态
   var btn=document.getElementById('safariCopyBtn');
-  btn.textContent='复制';btn.classList.remove('ok');
+  if(btn){btn.textContent='复制';btn.classList.remove('ok');}
 }
 function copySafariCmd(){
-  var code=document.getElementById('safariCmd').textContent;
+  var code=document.getElementById('safariCmdSrc').textContent;
   var btn=document.getElementById('safariCopyBtn');
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(code).then(function(){
       btn.textContent='已复制';btn.classList.add('ok');
-    }).catch(function(){
-      fallbackCopy(code,btn);
-    });
-  }else{
-    fallbackCopy(code,btn);
-  }
+    }).catch(function(){fallbackCopy(code,btn);});
+  }else{fallbackCopy(code,btn);}
 }
 function fallbackCopy(text,btn){
   var ta=document.createElement('textarea');
@@ -477,6 +464,11 @@ function fallbackCopy(text,btn){
   catch(e){btn.textContent='复制失败';}
   document.body.removeChild(ta);
 }
+(function(){
+  var src=document.getElementById('safariCmdSrc');
+  var pre=document.getElementById('safariCmd');
+  if(src&&pre)pre.textContent=src.textContent;
+})();
 
 const ROOT=new Set(['个人收藏','收藏夹栏','Favorites Bar','Bookmarks Bar','书签栏','其他书签','Other Bookmarks']);
 const SKIP_TOP=new Set(['小书签栏']);
