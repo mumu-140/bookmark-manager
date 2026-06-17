@@ -61,7 +61,6 @@
 
     .tree-node {
       padding: 8px;
-      cursor: pointer;
       border-radius: 6px;
       margin: 2px 0;
       display: flex;
@@ -88,6 +87,7 @@
       align-items: center;
       gap: 6px;
       font-size: 14px;
+      cursor: pointer;
     }
 
     .tree-node-count {
@@ -97,6 +97,37 @@
 
     .tree-children {
       margin-left: 24px;
+    }
+
+    .tree-children.collapsed {
+      display: none;
+    }
+
+    .toggle-btn {
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 16px;
+      transition: transform 0.15s;
+    }
+
+    .toggle-btn.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .toggle-btn:hover {
+      color: var(--text);
+    }
+
+    .no-children {
+      width: 20px;
     }
 
     .info-box {
@@ -184,6 +215,8 @@
         <button class="quick-btn" id="selectAllBtn">全选</button>
         <button class="quick-btn" id="deselectAllBtn">取消全选</button>
         <button class="quick-btn" id="selectBarBtn">仅书签栏</button>
+        <button class="quick-btn" id="expandAllBtn">展开全部</button>
+        <button class="quick-btn" id="collapseAllBtn">折叠全部</button>
       </div>
 
       <div class="tree" id="bookmarkTree">
