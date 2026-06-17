@@ -374,6 +374,7 @@ function collapseAll() {
  */
 async function confirm() {
   if (selectedIds.size === 0) {
+    alert('请先选择文件夹');
     return;
   }
 
@@ -381,8 +382,16 @@ async function confirm() {
   confirmBtn.textContent = '提取中...';
 
   try {
+    console.log('Selected IDs:', Array.from(selectedIds));
+
     // 优化提取逻辑：仅选中子目录时，构建"父+选中子"结构
     const folders = await extractSelectedFolders(Array.from(selectedIds));
+
+    console.log('Extracted folders:', folders.length, folders);
+
+    if (!folders || folders.length === 0) {
+      throw new Error('提取的文件夹为空');
+    }
 
     // 发送结果到父窗口
     if (window.opener) {
@@ -390,11 +399,15 @@ async function confirm() {
         action: 'bookmarksSelected',
         folders: folders
       }, '*');
+      console.log('Message sent to opener');
+    } else {
+      throw new Error('无法找到父窗口');
     }
 
     // 关闭窗口
     window.close();
   } catch (error) {
+    console.error('Confirm error:', error);
     alert('提取失败: ' + error.message);
     confirmBtn.disabled = false;
     confirmBtn.textContent = '✓ 确认选择';

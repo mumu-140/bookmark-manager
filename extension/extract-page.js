@@ -55,11 +55,11 @@ function handleRangeChange(e) {
 
   if (value === 'select') {
     selectFoldersBtn.style.display = 'block';
-    selectedInfo.style.display = 'none';
+    selectedInfo.classList.remove('show');
     selectedFolders = null;
   } else {
     selectFoldersBtn.style.display = 'none';
-    selectedInfo.style.display = 'none';
+    selectedInfo.classList.remove('show');
     selectedFolders = null;
   }
 }
@@ -82,6 +82,24 @@ function openFolderPicker() {
 function handlePickerMessage(event) {
   if (event.data.action === 'bookmarksSelected') {
     selectedFolders = event.data.folders;
+
+    if (!selectedFolders || selectedFolders.length === 0) {
+      selectedInfo.textContent = '未选择任何文件夹';
+      selectedInfo.classList.remove('show');
+      return;
+    }
+
+    // 计算总书签数
+    const totalBookmarks = selectedFolders.reduce((sum, folder) => {
+      return sum + countBookmarksInTree(folder);
+    }, 0);
+
+    selectedInfo.textContent = `✓ 已选择 ${selectedFolders.length} 个文件夹，共 ${totalBookmarks} 个书签`;
+    selectedInfo.classList.add('show');
+
+    console.log('Selected folders:', selectedFolders.length, 'Total bookmarks:', totalBookmarks);
+  }
+}
 
     // 计算总书签数
     const totalBookmarks = selectedFolders.reduce((sum, folder) => {
