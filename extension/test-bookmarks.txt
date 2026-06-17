@@ -1,0 +1,56 @@
+{
+  "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+  "version": "0.0.6",
+  "createDate": 1718611200000,
+  "bookmarks": [
+    {
+      "children": [
+        {
+          "title": "常用网站",
+          "children": [
+            {
+              "syncing": true,
+              "title": "Google",
+              "url": "https://www.google.com/"
+            },
+            {
+              "syncing": true,
+              "title": "GitHub",
+              "url": "https://github.com/"
+            },
+            {
+              "syncing": true,
+              "title": "Stack Overflow",
+              "url": "https://stackoverflow.com/"
+            }
+          ]
+        },
+        {
+          "title": "开发工具",
+          "children": [
+            {
+              "syncing": true,
+              "title": "VS Code",
+              "url": "https://code.visualstudio.com/"
+            },
+            {
+              "syncing": true,
+              "title": "Claude AI",
+              "url": "https://claude.ai/"
+            }
+          ]
+        },
+        {
+          "title": "测试单个书签",
+          "children": [
+            {
+              "syncing": true,
+              "title": "MDN Web Docs",
+              "url": "https://developer.mozilla.org/"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

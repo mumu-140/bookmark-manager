@@ -11,6 +11,7 @@
 
 - [试用](#试用)
 - [快速开始](QUICK_START.md) 🚀
+- [浏览器扩展](#浏览器扩展) 🆕
 - [自行部署](#自行部署)
   - [方案 A：Cloudflare Pages（推荐）](#方案-acloudflare-pages推荐)
   - [方案 B：GitHub Actions + GitHub Pages](#方案-bgithub-actions--github-pages)
@@ -34,6 +35,54 @@
 **直接打开：https://bms.yanggod.bond**
 
 无需注册、无需安装、无后端服务。所有书签数据只在你自己的浏览器里处理，不上传到任何服务器。可打开浏览器开发者工具的 Network 面板验证 —— 加载完 HTML 之后再无任何外部请求。
+
+---
+
+## 浏览器扩展
+
+### Chrome/Edge 扩展：Bookmark Gist Sync 🆕
+
+**从 Gist 自动同步书签到 Edge/Chrome 浏览器**
+
+配合在线工具，实现 **Safari → Gist → Edge/Chrome** 的完整跨浏览器书签同步链路。
+
+#### 主要功能
+
+- ⚡ 一键从 GitHub Gist 下载书签
+- 🔄 自动覆盖本地书签（删除现有 + 导入新的）
+- 🔒 Token 本地存储，安全可靠
+- 📦 支持 BookmarkHub JSON 和 Chromium HTML 格式
+
+#### 快速开始
+
+1. **安装扩展**：
+   - 克隆本仓库：`git clone https://github.com/mumu-140/bookmark-manager.git`
+   - 打开 `edge://extensions` 或 `chrome://extensions`
+   - 启用"开发者模式"
+   - 点击"加载已解压的扩展程序"
+   - 选择 `extension/` 目录
+
+2. **配置扩展**：
+   - 点击扩展图标 → "⚙️ 配置"
+   - 填写 Gist URL（从在线工具上传后获得）
+   - 填写 GitHub Token（仅私有 Gist 需要）
+   - 保存配置
+
+3. **同步书签**：
+   - 点击扩展图标
+   - 点击"⚡ 立即同步"
+   - 确认删除现有书签的警告
+   - 等待同步完成
+
+#### 完整同步流程
+
+```
+Safari 导出 → 在线工具审核/转换 → 上传到 Gist
+                                        ↓
+                            Edge/Chrome 扩展同步
+```
+
+**详细文档**：[extension/README.md](extension/README.md)
 
 ---
 

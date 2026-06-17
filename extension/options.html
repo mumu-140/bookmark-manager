@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmark Gist Sync - 配置</title>
+  <style>
+    :root {
+      --bg: #f4f1ec;
+      --surface: #ffffff;
+      --border: #ddd4c8;
+      --text: #1a1714;
+      --text-muted: #6e665d;
+      --primary: #b05830;
+      --primary-hover: #8e3f1e;
+      --success: #1d7a50;
+      --error: #b8342c;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(60, 40, 20, 0.06);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .help-text {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .radio-option:hover {
+      background: #f9f5ee;
+      border-color: var(--primary);
+    }
+
+    .radio-option input[type="radio"] {
+      margin-top: 2px;
+      cursor: pointer;
+    }
+
+    .radio-label {
+      flex: 1;
+    }
+
+    .radio-label strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .radio-label span {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    button {
+      padding: 11px 20px;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #f9f5ee;
+    }
+
+    .btn-primary:disabled,
+    .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: #e8f5ee;
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+
+    .alert-error {
+      background: #fce8e6;
+      color: var(--error);
+      border: 1px solid var(--error);
+    }
+
+    .alert-info {
+      background: #e6f0fb;
+      color: #2068a8;
+      border: 1px solid #2068a8;
+    }
+
+    .warning-box {
+      background: #fef4e0;
+      border: 1px solid #a85c00;
+      color: #a85c00;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-top: 20px;
+    }
+
+    .warning-box strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 40px;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔖 Bookmark Gist Sync</h1>
+    <p class="subtitle">从 GitHub Gist 同步书签到 Edge/Chrome 浏览器</p>
+
+    <div class="card">
+      <form id="configForm">
+        <div class="form-group">
+          <label for="gistUrl">Gist URL *</label>
+          <input
+            type="text"
+            id="gistUrl"
+            placeholder="https://gist.github.com/username/abc123..."
+            required
+          >
+          <p class="help-text">支持 Gist 页面 URL 或原始文件 URL（raw.githubusercontent.com）</p>
+        </div>
+
+        <div class="form-group">
+          <label for="githubToken">GitHub Personal Access Token</label>
+          <input
+            type="password"
+            id="githubToken"
+            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          >
+          <p class="help-text">
+            仅访问私有 Gist 时需要。权限：<code>gist</code>。
+            <a href="https://github.com/settings/tokens/new" target="_blank">生成 Token</a>
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label>书签格式</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="format" value="auto" checked>
+              <span class="radio-label">
+                <strong>自动检测（推荐）</strong>
+                <span>根据文件名和内容自动识别格式</span>
+              </span>
+            </label>
+
+            <label class="radio-option">
+              <input type="radio" name="format" value="bookmarkhub">
+              <span class="radio-label">
+                <strong>BookmarkHub JSON (.txt)</strong>
+                <span>适合从 Safari 经转换工具导出的书签</span>
+              </span>
+            </label>
+
+            <label class="radio-option">
+              <input type="radio" name="format" value="html">
+              <span class="radio-label">
+                <strong>Chromium HTML (.html)</strong>
+                <span>标准 Netscape Bookmark 格式</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" id="flattenTopFolder" style="margin-right: 8px; cursor: pointer;" checked>
+            <span>自动移除顶层"个人收藏"文件夹</span>
+          </label>
+          <p class="help-text">
+            如果书签文件只有一个顶层文件夹（如"个人收藏"、"Bookmarks Bar"），将自动展平并直接导入其子项。适合 Safari 导出的书签。
+          </p>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary" id="saveBtn">
+            💾 保存配置
+          </button>
+          <button type="button" class="btn-secondary" id="testBtn">
+            🔍 测试连接
+          </button>
+        </div>
+
+        <div id="alert" class="alert"></div>
+      </form>
+
+      <div class="warning-box">
+        <strong>⚠️ 重要提示</strong>
+        同步操作将<strong>删除所有现有书签</strong>并导入 Gist 中的书签。请确保已备份重要书签！
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Token 仅存储在本地浏览器，不会上传到任何服务器</p>
+      <p><a href="https://github.com/mumu-140/bookmark-manager" target="_blank">查看项目文档</a></p>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
