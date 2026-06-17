@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.4.0] - 2026-06-17
+
+### Added
+- **主界面双向同步**：新增上传和覆盖下载两个独立按钮
+- **上传模式选择**：
+  - 固定 Gist ID 模式：更新现有 Gist，适合日常备份
+  - 新建 Gist 模式：每次创建新 Gist，适合存档备份
+- **配置页面增强**：新增上传模式和 Gist ID 配置项
+- **智能按钮状态**：根据配置自动启用/禁用上传和下载按钮
+
+### Changed
+- 主界面：将「立即同步」拆分为「📤 上传书签」和「📥 覆盖下载」
+- 配置验证：固定模式下必须填写 Gist ID
+- 进度提示：上传和下载使用独立的进度消息
+
+### Technical
+- Background：导入 extract.js，新增 uploadBookmarks、updateGist、createGist 函数
+- API 集成：支持 PATCH /gists/{id}（更新）和 POST /gists（创建）
+- 消息机制：新增 uploadProgress 和 downloadProgress 两种消息类型
+
+### Workflow
+- 完整同步链路：Safari → 提取页 → Gist（上传）→ Edge/Chrome（下载）
+- 双向操作：既可从 Gist 下载书签，也可上传书签到 Gist
+
 ## [1.3.0] - 2026-06-17
 
 ### Added
