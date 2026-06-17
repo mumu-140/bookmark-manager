@@ -4,6 +4,7 @@
 
 let bookmarkTree = null;
 let selectedIds = new Set();
+let collapsedIds = new Set(); // 保存折叠状态
 
 const treeContainer = document.getElementById('bookmarkTree');
 const selectionInfo = document.getElementById('selectionInfo');
@@ -45,7 +46,25 @@ function renderTree() {
     }
   });
 
+  // 恢复折叠状态
+  restoreCollapsedState();
+
   updateSelectionInfo();
+}
+
+/**
+ * 恢复折叠状态
+ */
+function restoreCollapsedState() {
+  collapsedIds.forEach(nodeId => {
+    const toggleBtn = document.querySelector(`.toggle-btn[data-node-id="${nodeId}"]`);
+    const childrenDiv = document.querySelector(`.tree-children[data-parent-id="${nodeId}"]`);
+
+    if (toggleBtn && childrenDiv) {
+      childrenDiv.classList.add('collapsed');
+      toggleBtn.classList.add('collapsed');
+    }
+  });
 }
 
 /**
@@ -141,8 +160,19 @@ function toggleFolder(nodeId) {
   const childrenDiv = document.querySelector(`.tree-children[data-parent-id="${nodeId}"]`);
 
   if (toggleBtn && childrenDiv) {
-    childrenDiv.classList.toggle('collapsed');
-    toggleBtn.classList.toggle('collapsed');
+    const isCollapsed = childrenDiv.classList.contains('collapsed');
+
+    if (isCollapsed) {
+      // 展开
+      childrenDiv.classList.remove('collapsed');
+      toggleBtn.classList.remove('collapsed');
+      collapsedIds.delete(nodeId);
+    } else {
+      // 折叠
+      childrenDiv.classList.add('collapsed');
+      toggleBtn.classList.add('collapsed');
+      collapsedIds.add(nodeId);
+    }
   }
 }
 
@@ -294,6 +324,7 @@ function selectBookmarksBar() {
  * 展开所有文件夹
  */
 function expandAll() {
+  collapsedIds.clear();
   document.querySelectorAll('.tree-children.collapsed').forEach(el => {
     el.classList.remove('collapsed');
   });
@@ -306,6 +337,30 @@ function expandAll() {
  * 折叠所有文件夹
  */
 function collapseAll() {
+  // 收集所有文件夹节点
+  function collectFolderIds(node) {
+    const ids = [];
+    if (node.children && node.children.length > 0) {
+      const hasChildFolders = node.children.some(child => child.children);
+      if (hasChildFolders) {
+        ids.push(node.id);
+      }
+      node.children.forEach(child => {
+        if (child.children) {
+          ids.push(...collectFolderIds(child));
+        }
+      });
+    }
+    return ids;
+  }
+
+  const allFolderIds = [];
+  bookmarkTree.children.forEach(node => {
+    allFolderIds.push(...collectFolderIds(node));
+  });
+
+  allFolderIds.forEach(id => collapsedIds.add(id));
+
   document.querySelectorAll('.tree-children').forEach(el => {
     el.classList.add('collapsed');
   });
