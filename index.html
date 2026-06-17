@@ -422,15 +422,21 @@ with open(out, "w", encoding="utf-8") as f:
 print("Done:", out)
 SCRIPT
 python3 /tmp/_safari_bm.py && rm /tmp/_safari_bm.py</script>
-    <div class="safari-code-wrap">
-      <pre class="safari-code" id="safariCmd"></pre>
-      <button class="safari-copy" id="safariCopyBtn" onclick="copySafariCmd()">复制</button>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="go-btn" style="margin:0;flex:1" onclick="copySafariCmd()">📋 一键复制命令</button>
+      <span id="safariCopyStatus" style="display:flex;align-items:center;font-size:13px;color:var(--grn);white-space:nowrap"></span>
     </div>
     <ol>
       <li>打开<b>终端</b>（Spotlight 搜索"终端"或"Terminal"）</li>
       <li>粘贴命令，按 <b>回车</b> 执行</li>
       <li>回到本页，把生成的 <code>safari-bookmarks.html</code> 拖进导入区域</li>
     </ol>
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;color:var(--mt);font-size:13px;user-select:none">查看完整命令</summary>
+      <div class="safari-code-wrap" style="margin-top:8px">
+        <pre class="safari-code" id="safariCmd"></pre>
+      </div>
+    </details>
     <p class="safari-note"><b>权限提示：</b>若报 <code>PermissionError</code>，前往<b>系统设置 → 隐私与安全性 → 完全磁盘访问权限</b>，勾选「终端」后重试。</p>
     <p class="safari-note"><b>不想折腾？</b>直接在 Safari 菜单栏选「文件 → 导出 → 书签」，保存后拖进本页导入，效果一样。</p>
     <button class="safari-modal-close" onclick="hideSafariHint()">知道了</button>
@@ -444,24 +450,20 @@ function showSafariHint(){
 }
 function hideSafariHint(){
   document.getElementById('safariModal').classList.remove('show');
-  var btn=document.getElementById('safariCopyBtn');
-  if(btn){btn.textContent='复制';btn.classList.remove('ok');}
 }
 function copySafariCmd(){
   var code=document.getElementById('safariCmdSrc').textContent;
-  var btn=document.getElementById('safariCopyBtn');
+  var status=document.getElementById('safariCopyStatus');
+  var done=function(){status.textContent='✓ 已复制';setTimeout(function(){status.textContent='';},2000);};
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(code).then(function(){
-      btn.textContent='已复制';btn.classList.add('ok');
-    }).catch(function(){fallbackCopy(code,btn);});
-  }else{fallbackCopy(code,btn);}
+    navigator.clipboard.writeText(code).then(done).catch(function(){fallbackCopy(code,null);done();});
+  }else{fallbackCopy(code,null);done();}
 }
 function fallbackCopy(text,btn){
   var ta=document.createElement('textarea');
   ta.value=text;ta.style.cssText='position:fixed;left:-9999px';
   document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy');btn.textContent='已复制';btn.classList.add('ok');}
-  catch(e){btn.textContent='复制失败';}
+  try{document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);
 }
 (function(){
