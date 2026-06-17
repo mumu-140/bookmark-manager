@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>选择书签文件夹</title>
+  <style>
+    :root {
+      --bg: #f4f1ec;
+      --surface: #ffffff;
+      --border: #ddd4c8;
+      --text: #1a1714;
+      --text-muted: #6e665d;
+      --primary: #b05830;
+      --primary-hover: #8e3f1e;
+      --radius: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .tree {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .tree-node {
+      padding: 8px;
+      cursor: pointer;
+      border-radius: 6px;
+      margin: 2px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tree-node:hover {
+      background: #f9f5ee;
+    }
+
+    .tree-node.selected {
+      background: #e8f5ee;
+      border-left: 3px solid #1d7a50;
+    }
+
+    .tree-node input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    .tree-node-label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+
+    .tree-node-count {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .tree-children {
+      margin-left: 24px;
+    }
+
+    .info-box {
+      background: #e6f0fb;
+      border: 1px solid #2068a8;
+      color: #2068a8;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #f9f5ee;
+    }
+
+    .quick-actions {
+      margin-bottom: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .quick-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .quick-btn:hover {
+      background: #f9f5ee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📂 选择书签文件夹</h1>
+    <p class="subtitle">选择要提取的书签文件夹（支持多选）</p>
+
+    <div class="info-box" id="selectionInfo">
+      已选择: 0 个文件夹，共 0 个书签
+    </div>
+
+    <div class="card">
+      <div class="quick-actions">
+        <button class="quick-btn" id="selectAllBtn">全选</button>
+        <button class="quick-btn" id="deselectAllBtn">取消全选</button>
+        <button class="quick-btn" id="selectBarBtn">仅书签栏</button>
+      </div>
+
+      <div class="tree" id="bookmarkTree">
+        加载中...
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="confirmBtn" disabled>
+        ✓ 确认选择
+      </button>
+      <button class="btn-secondary" id="cancelBtn">
+        取消
+      </button>
+    </div>
+  </div>
+
+  <script src="extract.js"></script>
+  <script src="picker.js"></script>
+</body>
+</html>

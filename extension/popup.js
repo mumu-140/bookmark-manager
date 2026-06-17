@@ -9,6 +9,8 @@ const lastSyncEl = document.getElementById('lastSync');
 const messageEl = document.getElementById('message');
 const optionsBtn = document.getElementById('optionsBtn');
 const helpBtn = document.getElementById('helpBtn');
+const compareBtn = document.getElementById('compareBtn');
+const extractBtn = document.getElementById('extractBtn');
 
 let isSyncing = false;
 
@@ -163,6 +165,26 @@ chrome.runtime.onMessage.addListener((request) => {
 });
 
 /**
+ * 打开对比页面
+ */
+function openCompare() {
+  chrome.tabs.create({
+    url: chrome.runtime.getURL('compare.html')
+  });
+  window.close();
+}
+
+/**
+ * 打开提取书签页面
+ */
+function openExtract() {
+  chrome.tabs.create({
+    url: chrome.runtime.getURL('extract.html')
+  });
+  window.close();
+}
+
+/**
  * 打开配置页
  */
 function openOptions() {
@@ -180,6 +202,8 @@ function openHelp() {
 
 // 事件监听
 syncBtn.addEventListener('click', performSync);
+compareBtn.addEventListener('click', openCompare);
+extractBtn.addEventListener('click', openExtract);
 optionsBtn.addEventListener('click', openOptions);
 helpBtn.addEventListener('click', openHelp);
 

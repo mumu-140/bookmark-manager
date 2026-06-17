@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bookmark Gist Sync",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "从 GitHub Gist 同步书签到 Edge/Chrome（支持 BookmarkHub 和 HTML 格式）",
   "permissions": [
     "bookmarks",
@@ -29,5 +29,15 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "options_page": "options.html"
+  "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "compare.html",
+        "extract.html",
+        "picker.html"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

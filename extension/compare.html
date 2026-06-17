@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>对比书签</title>
+  <style>
+    :root {
+      --bg: #f4f1ec;
+      --surface: #ffffff;
+      --border: #ddd4c8;
+      --text: #1a1714;
+      --text-muted: #6e665d;
+      --primary: #b05830;
+      --primary-hover: #8e3f1e;
+      --success: #1d7a50;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .source-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .source-card {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .source-card.active {
+      border-color: var(--success);
+      background: #f0f9f4;
+    }
+
+    .source-card h3 {
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #f9f5ee;
+    }
+
+    .btn-primary:disabled,
+    .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-name {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 8px;
+      min-height: 20px;
+    }
+
+    .info-box {
+      background: #e6f0fb;
+      border: 1px solid #2068a8;
+      color: #2068a8;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .info-box strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .compare-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    .status.loading {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .web-option {
+      background: #f9f5ee;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .web-option h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .web-option p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 对比书签</h1>
+    <p class="subtitle">对比两个来源的书签，找出差异并决策</p>
+
+    <div class="info-box">
+      <strong>💡 提示</strong>
+      这是简化版对比工具。完整功能（包括逐条审核、批量操作、可视化差异）请使用网页版工具。
+    </div>
+
+    <div class="card">
+      <div class="section-title">选择书签来源</div>
+      <div class="source-options">
+        <!-- 来源 A -->
+        <div class="source-card" id="sourceA">
+          <h3>📚 来源 A</h3>
+          <div class="btn-group">
+            <button class="btn-primary" id="btnBrowserA">从浏览器提取</button>
+            <button class="btn-secondary" id="btnFileA">上传文件</button>
+            <button class="btn-secondary" id="btnGistA">从 Gist 获取</button>
+          </div>
+          <div class="file-name" id="fileNameA"></div>
+          <input type="file" id="fileInputA" class="file-input" accept=".html,.txt,.json">
+        </div>
+
+        <!-- 来源 B -->
+        <div class="source-card" id="sourceB">
+          <h3>📗 来源 B</h3>
+          <div class="btn-group">
+            <button class="btn-primary" id="btnBrowserB">从浏览器提取</button>
+            <button class="btn-secondary" id="btnFileB">上传文件</button>
+            <button class="btn-secondary" id="btnGistB">从 Gist 获取</button>
+          </div>
+          <div class="file-name" id="fileNameB"></div>
+          <input type="file" id="fileInputB" class="file-input" accept=".html,.txt,.json">
+        </div>
+      </div>
+
+      <button class="btn-primary compare-btn" id="compareBtn" disabled>
+        开始对比
+      </button>
+    </div>
+
+    <div class="card web-option">
+      <h3>🌐 推荐：使用完整网页版工具</h3>
+      <p>网页版提供更强大的功能：逐条审核、批量操作、可视化差异、导出决策等</p>
+      <button class="btn-primary" id="openWebBtn">
+        打开网页版工具
+      </button>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script src="extract.js"></script>
+  <script src="parser.js"></script>
+  <script src="compare.js"></script>
+</body>
+</html>
