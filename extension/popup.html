@@ -338,6 +338,37 @@
     .warning-compact strong {
       color: #a85c00;
     }
+
+    .folder-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 12px;
+    }
+
+    .folder-checkbox:hover {
+      background: #f9f5ee;
+    }
+
+    .folder-checkbox input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    .folder-checkbox label {
+      flex: 1;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+
+    .folder-checkbox .count {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
   </style>
 </head>
 <body>
@@ -405,6 +436,42 @@
     </div>
 
     <div class="card">
+      <h3 style="font-size: 13px; margin-bottom: 6px;">选择导入层级</h3>
+      <div class="radio-group-compact">
+        <label class="radio-option-compact" data-mode="level1">
+          <input type="radio" name="importLevel" value="1">
+          <span class="radio-label-compact">
+            <strong>从第 1 层导入</strong>
+            <span>保持完整结构，包含所有顶层文件夹</span>
+          </span>
+        </label>
+
+        <label class="radio-option-compact" data-mode="level2">
+          <input type="radio" name="importLevel" value="2" checked>
+          <span class="radio-label-compact">
+            <strong>从第 2 层导入（推荐）</strong>
+            <span>跳过最外层容器，直接导入子文件夹</span>
+          </span>
+        </label>
+
+        <label class="radio-option-compact" data-mode="level3" id="level3Option" style="display: none;">
+          <input type="radio" name="importLevel" value="3">
+          <span class="radio-label-compact">
+            <strong>从第 3 层导入</strong>
+            <span>再深入一层，仅导入内容</span>
+          </span>
+        </label>
+      </div>
+
+      <div id="folderCheckboxes" style="margin-top: 12px; display: none;">
+        <h4 style="font-size: 12px; margin-bottom: 6px; font-weight: 600;">选择要导入的文件夹</h4>
+        <div id="folderCheckboxList" style="display: flex; flex-direction: column; gap: 6px;">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="display: none;">
       <div class="radio-group-compact">
         <label class="radio-option-compact" data-mode="keep">
           <input type="radio" name="importMode" value="keep">

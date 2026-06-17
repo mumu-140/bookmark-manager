@@ -79,6 +79,81 @@ function countBookmarks(nodes) {
 }
 
 /**
+ * 生成结构预览（带层级标记）
+ */
+function generateStructurePreview(nodes, indent = 0, level = 1) {
+  let html = '';
+  const prefix = '  '.repeat(indent);
+
+  for (const node of nodes) {
+    if (node.children) {
+      const count = countBookmarks(node.children);
+      html += `<div class="structure-item folder">${prefix}[${level}] ${node.title} <span class="count">(${count} 个)</span></div>`;
+      if (indent < 2) {
+        html += generateStructurePreview(node.children, indent + 1, level + 1);
+      }
+    }
+  }
+
+  return html;
+}
+
+/**
+ * 获取指定层级的节点
+ */
+function getNodesAtLevel(nodes, targetLevel, currentLevel = 1) {
+  if (currentLevel === targetLevel) {
+    return nodes;
+  }
+
+  let result = [];
+  for (const node of nodes) {
+    if (node.children && currentLevel < targetLevel) {
+      result = result.concat(getNodesAtLevel(node.children, targetLevel, currentLevel + 1));
+    }
+  }
+  return result;
+}
+
+/**
+ * 检测最大深度
+ */
+function getMaxDepth(nodes, currentDepth = 1) {
+  let maxDepth = currentDepth;
+  for (const node of nodes) {
+    if (node.children && node.children.length > 0) {
+      const childDepth = getMaxDepth(node.children, currentDepth + 1);
+      maxDepth = Math.max(maxDepth, childDepth);
+    }
+  }
+  return maxDepth;
+}
+
+/**
+ * 填充文件夹复选框
+ */
+function populateFolderCheckboxes(nodes) {
+  const container = document.getElementById('folderCheckboxList');
+  container.innerHTML = '';
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    if (node.children) {
+      const count = countBookmarks(node.children);
+      const checkbox = document.createElement('div');
+      checkbox.className = 'folder-checkbox';
+      checkbox.innerHTML = `
+        <input type="checkbox" id="folder_${i}" value="${i}" checked>
+        <label for="folder_${i}">
+          ${node.title} <span class="count">(${count} 个)</span>
+        </label>
+      `;
+      container.appendChild(checkbox);
+    }
+  }
+}
+
+/**
  * 生成结构预览
  */
 function generateStructurePreview(nodes, indent = 0) {
@@ -99,52 +174,34 @@ function generateStructurePreview(nodes, indent = 0) {
 }
 
 /**
- * 填充文件夹选择器
- */
-function populateFolderSelect(nodes) {
-  targetFolderCompact.innerHTML = '';
-
-  function addOptions(nodes, indent = 0) {
-    const prefix = '  '.repeat(indent);
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      if (node.children) {
-        const count = countBookmarks(node.children);
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `${prefix}${node.title} (${count} 个)`;
-        targetFolderCompact.appendChild(option);
-      }
-    }
-  }
-
-  addOptions(nodes);
-}
-
-/**
  * 显示导入选项界面
  */
 function showImportOptions(bookmarks) {
   pendingBookmarksData = bookmarks;
 
-  // 生成结构预览
+  // 生成结构预览（带层级标记）
   structurePreview.innerHTML = generateStructurePreview(bookmarks);
 
   // 统计总数
   const totalCount = countBookmarks(bookmarks);
   totalCountEl.textContent = totalCount;
 
-  // 填充文件夹选择器
-  populateFolderSelect(bookmarks);
+  // 检测最大深度
+  const maxDepth = getMaxDepth(bookmarks);
 
-  // 智能默认选择
-  if (bookmarks.length === 1 && bookmarks[0].children) {
-    document.querySelector('input[value="flatten"]').checked = true;
+  // 显示/隐藏第 3 层选项
+  const level3Option = document.getElementById('level3Option');
+  if (maxDepth >= 3) {
+    level3Option.style.display = 'flex';
   } else {
-    document.querySelector('input[value="keep"]').checked = true;
+    level3Option.style.display = 'none';
   }
 
-  updateRadioStyles();
+  // 默认选择第 2 层（最常用）
+  document.querySelector('input[name="importLevel"][value="2"]').checked = true;
+
+  // 初始化文件夹复选框
+  updateLevelSelection();
 
   // 切换界面
   mainView.classList.add('hide');
@@ -161,10 +218,25 @@ function hideImportOptions() {
 }
 
 /**
- * 更新单选框样式
+ * 更新层级选择
  */
-function updateRadioStyles() {
-  document.querySelectorAll('.radio-option-compact').forEach(option => {
+function updateLevelSelection() {
+  const selectedLevel = parseInt(document.querySelector('input[name="importLevel"]:checked').value);
+  const nodesAtLevel = getNodesAtLevel(pendingBookmarksData, selectedLevel);
+
+  // 如果该层级有多个文件夹，显示复选框
+  const folderCheckboxes = document.getElementById('folderCheckboxes');
+  const hasFolders = nodesAtLevel.filter(n => n.children).length > 1;
+
+  if (hasFolders) {
+    populateFolderCheckboxes(nodesAtLevel);
+    folderCheckboxes.style.display = 'block';
+  } else {
+    folderCheckboxes.style.display = 'none';
+  }
+
+  // 更新单选框样式
+  document.querySelectorAll('.radio-option-compact[data-mode^="level"]').forEach(option => {
     const radio = option.querySelector('input[type="radio"]');
     if (radio.checked) {
       option.classList.add('selected');
@@ -172,34 +244,29 @@ function updateRadioStyles() {
       option.classList.remove('selected');
     }
   });
-
-  const selectedMode = document.querySelector('input[name="importMode"]:checked').value;
-  if (selectedMode === 'specific') {
-    folderSelectCompact.classList.add('show');
-  } else {
-    folderSelectCompact.classList.remove('show');
-  }
 }
 
 /**
  * 确认导入
  */
 function confirmImport() {
-  const importMode = document.querySelector('input[name="importMode"]:checked').value;
-  const selectedFolderIndex = targetFolderCompact.value;
+  const selectedLevel = parseInt(document.querySelector('input[name="importLevel"]:checked').value);
 
-  let processedBookmarks = pendingBookmarksData;
+  // 获取该层级的所有节点
+  let nodesAtLevel = getNodesAtLevel(pendingBookmarksData, selectedLevel);
 
-  // 根据选择处理书签
-  if (importMode === 'flatten') {
-    if (pendingBookmarksData.length === 1 && pendingBookmarksData[0].children) {
-      processedBookmarks = pendingBookmarksData[0].children;
-    }
-  } else if (importMode === 'specific') {
-    const selectedFolder = pendingBookmarksData[parseInt(selectedFolderIndex)];
-    if (selectedFolder && selectedFolder.children) {
-      processedBookmarks = selectedFolder.children;
-    }
+  // 如果显示了复选框，过滤未选中的文件夹
+  const folderCheckboxes = document.getElementById('folderCheckboxes');
+  if (folderCheckboxes.style.display !== 'none') {
+    const checkedIndexes = Array.from(document.querySelectorAll('#folderCheckboxList input[type="checkbox"]:checked'))
+      .map(cb => parseInt(cb.value));
+    nodesAtLevel = nodesAtLevel.filter((node, index) => checkedIndexes.includes(index));
+  }
+
+  // 展平：如果只有一个节点且有子节点，直接导入其子节点
+  let processedBookmarks = nodesAtLevel;
+  if (nodesAtLevel.length === 1 && nodesAtLevel[0].children) {
+    processedBookmarks = nodesAtLevel[0].children;
   }
 
   // 隐藏选项界面
@@ -210,7 +277,7 @@ function confirmImport() {
     action: 'confirmImport',
     data: {
       bookmarks: processedBookmarks,
-      mode: importMode
+      level: selectedLevel
     }
   });
 }
@@ -485,15 +552,15 @@ optionsBtn.addEventListener('click', openOptions);
 helpBtn.addEventListener('click', openHelp);
 
 // 导入选项界面事件监听
-document.querySelectorAll('input[name="importMode"]').forEach(radio => {
-  radio.addEventListener('change', updateRadioStyles);
+document.querySelectorAll('input[name="importLevel"]').forEach(radio => {
+  radio.addEventListener('change', updateLevelSelection);
 });
 
-document.querySelectorAll('.radio-option-compact').forEach(option => {
+document.querySelectorAll('.radio-option-compact[data-mode^="level"]').forEach(option => {
   option.addEventListener('click', () => {
     const radio = option.querySelector('input[type="radio"]');
     radio.checked = true;
-    updateRadioStyles();
+    updateLevelSelection();
   });
 });
 
