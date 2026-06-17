@@ -5,17 +5,30 @@
 let selectedFolders = null;
 let selectedFormat = 'bookmarkhub';
 
-const rangeRadios = document.querySelectorAll('input[name="range"]');
-const selectFoldersBtn = document.getElementById('selectFoldersBtn');
-const selectedInfo = document.getElementById('selectedInfo');
-const formatBtns = document.querySelectorAll('.format-btn');
-const downloadBtn = document.getElementById('downloadBtn');
-const uploadGistBtn = document.getElementById('uploadGistBtn');
+// DOM 元素（延迟获取，确保 DOM 已加载）
+let rangeRadios, selectFoldersBtn, selectedInfo, formatBtns, downloadBtn, uploadGistBtn;
 
 /**
  * 初始化
  */
 function init() {
+  // 获取 DOM 元素
+  rangeRadios = document.querySelectorAll('input[name="range"]');
+  selectFoldersBtn = document.getElementById('selectFoldersBtn');
+  selectedInfo = document.getElementById('selectedInfo');
+  formatBtns = document.querySelectorAll('.format-btn');
+  downloadBtn = document.getElementById('downloadBtn');
+  uploadGistBtn = document.getElementById('uploadGistBtn');
+
+  if (!selectFoldersBtn || !downloadBtn || !uploadGistBtn || formatBtns.length === 0) {
+    console.error('Failed to find required DOM elements:', {
+      selectFoldersBtn: !!selectFoldersBtn,
+      downloadBtn: !!downloadBtn,
+      uploadGistBtn: !!uploadGistBtn,
+      formatBtns: formatBtns.length
+    });
+    return;
+  }
   // 监听范围选择
   rangeRadios.forEach(radio => {
     radio.addEventListener('change', handleRangeChange);
@@ -275,5 +288,10 @@ async function handleUploadGist() {
   }
 }
 
-// 初始化
-init();
+// 等待 DOM 加载完成后初始化
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  // DOM 已经加载完成
+  init();
+}
