@@ -219,6 +219,18 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
   <div style="text-align:center;margin-bottom:8px">
     <button class="safari-hint" onclick="showSafariHint()">🧭 Safari 用户？终端一键导出书签</button>
   </div>
+  <div style="text-align:center;margin:12px 0 4px">
+    <label style="color:var(--mt);font-size:14px;display:inline-flex;align-items:center;gap:6px">
+      忽略顶层目录差异
+      <select id="skipLevels" style="border:1px solid var(--ln);border-radius:var(--r);padding:5px 8px;background:#fff;font:inherit">
+        <option value="0">不忽略</option>
+        <option value="1" selected>跳过 1 层</option>
+        <option value="2">跳过 2 层</option>
+        <option value="3">跳过 3 层</option>
+      </select>
+    </label>
+    <p style="color:var(--mt);font-size:12px;margin:4px 0 0">不同来源的根文件夹名可能不同（如 BookmarksBar vs Untitled），跳过可避免误报</p>
+  </div>
   <button class="go-btn" id="goBtn" disabled>开始对比审核</button>
 </div>
 
@@ -472,7 +484,7 @@ function fallbackCopy(text,btn){
   if(src&&pre)pre.textContent=src.textContent;
 })();
 
-const ROOT=new Set(['个人收藏','收藏夹栏','Favorites Bar','Bookmarks Bar','书签栏','其他书签','Other Bookmarks']);
+const ROOT=new Set(['个人收藏','收藏夹栏','Favorites Bar','Bookmarks Bar','BookmarksBar','书签栏','其他书签','Other Bookmarks','Untitled','bookmarks']);
 const SKIP_TOP=new Set(['小书签栏']);
 
 function parseHTML(text){
@@ -567,17 +579,29 @@ function rd(file,side){
 }
 setupDrop(dropA,fileA,'a');setupDrop(dropB,fileB,'b');
 
+function trimPaths(bm,skip){
+  if(!skip)return bm;
+  return bm.map(b=>{
+    const pp=b.pathParts.slice(skip),rp=b.rawParts?b.rawParts.slice(skip):pp;
+    return Object.assign({},b,{pathParts:pp,rawParts:rp,path:pp.join(' / ')||'(根目录)'});
+  });
+}
+
 goBtn.onclick=()=>{
   try{
-    const a=autoParse(rawA),b=autoParse(rawB),items=buildItems(a.bm,b.bm);
+    const skip=parseInt(document.getElementById('skipLevels').value)||0;
+    const a=autoParse(rawA),b=autoParse(rawB);
+    const aBm=trimPaths(a.bm,skip),bBm=trimPaths(b.bm,skip);
+    const items=buildItems(aBm,bBm);
     DATA={nameA:fnA,nameB:fnB,fmtA:a.fmt,fmtB:b.fmt,cntA:a.bm.length,cntB:b.bm.length,items,
-      allA:a.bm,allB:b.bm,
+      allA:aBm,allB:bBm,
       summary:{bOnly:items.filter(i=>i.type==='b_only').length,aOnly:items.filter(i=>i.type==='a_only').length,diff:items.filter(i=>i.type==='diff').length,total:items.length}};
     state=new Map(items.map(it=>[it.id,{action:it.defaultAction,note:''}]));
     document.getElementById('compareScreen').classList.add('hidden');
     document.getElementById('reviewScreen').classList.remove('hidden');
+    const skipNote=skip?`  ｜  已跳过顶层 ${skip} 层`:'';
     document.getElementById('subInfo').textContent=
-      `A: ${DATA.nameA} (${DATA.fmtA}, ${DATA.cntA} 条)  ｜  B: ${DATA.nameB} (${DATA.fmtB}, ${DATA.cntB} 条)  ｜  已排除 小书签栏 和 javascript:`;
+      `A: ${DATA.nameA} (${DATA.fmtA}, ${DATA.cntA} 条)  ｜  B: ${DATA.nameB} (${DATA.fmtB}, ${DATA.cntB} 条)  ｜  已排除 小书签栏 和 javascript:${skipNote}`;
     render();
   }catch(e){alert('解析失败：'+e.message)}
 };
