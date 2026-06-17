@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.6.1] - 2026-06-17
+
+### Fixed
+- **弹窗数据传递问题**：解决 URL 参数传递书签数据时的长度限制导致解析失败
+
+### Changed
+- **实现方案重构**：从独立弹窗改为 popup 内嵌界面
+- **数据传递方式**：从 URL 参数改为内存消息传递
+- **用户体验优化**：无需额外窗口，界面切换更流畅
+
+### Removed
+- 删除 import-options.html（独立弹窗页面）
+- 删除 import-options.js（弹窗逻辑）
+- 减少包体积
+
+### Technical
+- popup 内两个视图切换（mainView ⇄ importOptionsView）
+- 通过 chrome.runtime.sendMessage 传递书签数据
+- 数据存储在 pendingBookmarksData 变量
+- 紧凑样式适配 popup 尺寸
+
 ## [1.6.0] - 2026-06-17
 
 ### Added
