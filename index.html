@@ -1028,57 +1028,54 @@ function validateExport(content,fmt){
   return null;
 }
 
-function getGistIds(){try{return JSON.parse(localStorage.getItem('gist_ids')||'{}')}catch{return{}}}
-function saveGistId(filename,id){const ids=getGistIds();ids[filename]=id;localStorage.setItem('gist_ids',JSON.stringify(ids))}
+function getGistConfig(){return{token:localStorage.getItem('github_token')||'',gistId:localStorage.getItem('gist_id')||''}}
+function saveGistConfig(token,gistId){
+  if(token)localStorage.setItem('github_token',token);
+  if(gistId)localStorage.setItem('gist_id',gistId);
+  if(typeof updateTokenStatus==='function')updateTokenStatus();
+  if(typeof updateTokenStatusGist==='function')updateTokenStatusGist();
+}
 
 async function uploadToGistShared(content,filename,description,fmt){
   // 1. 格式检查
   showLoading({title:'检查格式',text:'正在验证导出内容...'});
-  await new Promise(r=>setTimeout(r,100)); // 让 UI 更新
+  await new Promise(r=>setTimeout(r,100));
   const err=validateExport(content,fmt);
   if(err){hideLoading();alert('❌ 格式检查未通过：'+err+'\n\n已取消上传。');return}
 
-  // 2. Token
-  const token=localStorage.getItem('github_token');
-  if(!token){
+  // 2. 配置管理（Token + Gist ID）
+  let cfg=getGistConfig();
+
+  if(!cfg.token){
     hideLoading();
-    const input=prompt('请输入你的 GitHub Personal Access Token\n\n权限需要: gist\n\n获取地址: https://github.com/settings/tokens/new\n\n（Token 会保存在浏览器 localStorage 中，仅本地使用）');
+    const input=prompt('首次上传，请配置 GitHub Gist\n\nToken（必需）：GitHub Personal Access Token\n  权限: gist\n  获取: https://github.com/settings/tokens/new\n\nGist ID（可选）：已有 Gist 的 ID\n  留空则自动创建新 Gist\n\n格式：Token,GistID\n示例：ghp_xxxx,abc123def456');
     if(!input)return;
-    localStorage.setItem('github_token',input.trim());
-    if(typeof updateTokenStatus==='function')updateTokenStatus();
-    if(typeof updateTokenStatusGist==='function')updateTokenStatusGist();
-    alert('Token 已保存，请再次点击上传');
+    const parts=input.split(',').map(s=>s.trim());
+    const newToken=parts[0]||'';
+    const newGistId=parts[1]||'';
+    if(!newToken){alert('Token 不能为空');return}
+    saveGistConfig(newToken,newGistId);
+    cfg=getGistConfig();
+    alert('配置已保存，请再次点击上传');
     return;
   }
 
-  // 3. 覆盖询问（支持模糊匹配）
-  const allGists=getGistIds();
-  const exactMatch=allGists[filename];
-
-  // 查找同类型文件（BookmarkHub.txt 可以匹配任何 .txt，HTML 可以匹配任何 .html）
-  const ext=filename.split('.').pop().toLowerCase();
-  const similarGists=Object.entries(allGists).filter(([name,id])=>{
-    const nameExt=name.split('.').pop().toLowerCase();
-    return nameExt===ext || (ext==='txt'&&nameExt==='txt') || (ext==='html'&&nameExt.includes('html'));
-  });
-
-  let method='POST',apiUrl='https://api.github.com/gists';
-
-  if(exactMatch){
-    method='PATCH';apiUrl+='/'+exactMatch;
-  }else if(similarGists.length>0){
-    hideLoading();
-    const options=similarGists.map(([name,id],i)=>`${i+1}. ${name} (ID: ${id.slice(0,8)}...)`).join('\n');
-    const choice=prompt(`找到 ${similarGists.length} 个相似的已上传文件：\n\n${options}\n\n输入序号覆盖对应文件，留空则创建新 Gist：`);
-    if(choice){
-      const idx=parseInt(choice)-1;
-      if(idx>=0&&idx<similarGists.length){
-        method='PATCH';
-        apiUrl+='/'+similarGists[idx][1];
-        filename=similarGists[idx][0]; // 使用原文件名
-      }
-    }
+  // 已保存 → 询问是否修改
+  hideLoading();
+  const gistDisplay=cfg.gistId||'（未设置，将自动创建）';
+  const modify=prompt(`当前配置：\n\nToken: ${cfg.token.slice(0,8)}...\nGist ID: ${gistDisplay}\n\n修改请输入（格式：Token,GistID）\n留空字段保留原值，直接点确定则不修改：`);
+  if(modify!==null&&modify.trim()!==''){
+    const parts=modify.split(',').map(s=>s.trim());
+    const newToken=parts[0]||cfg.token;
+    const newGistId=parts[1]!==undefined?parts[1]:cfg.gistId;
+    saveGistConfig(newToken,newGistId);
+    cfg=getGistConfig();
   }
+
+  // 3. 上传
+  const method=cfg.gistId?'PATCH':'POST';
+  const apiUrl=cfg.gistId?`https://api.github.com/gists/${cfg.gistId}`:'https://api.github.com/gists';
+  const token=cfg.token;
 
   showLoading({title:'上传到 GitHub',text:method==='PATCH'?'正在覆盖更新 Gist...':'正在创建新 Gist...'});
 
@@ -1118,13 +1115,18 @@ async function uploadToGistShared(content,filename,description,fmt){
     }
 
     const result=await resp.json();
-    saveGistId(filename,result.id);
+    // 新建的 Gist → 保存 ID
+    if(!cfg.gistId&&result.id){
+      localStorage.setItem('gist_id',result.id);
+      if(typeof updateTokenStatus==='function')updateTokenStatus();
+      if(typeof updateTokenStatusGist==='function')updateTokenStatusGist();
+    }
     hideLoading();
     const url=result.html_url;
-    const rawUrl=result.files[filename].raw_url;
+    const rawUrl=result.files[filename]?result.files[filename].raw_url:'';
     const verb=method==='PATCH'?'覆盖更新':'上传';
 
-    if(confirm(`✅ ${verb}成功！\n\nGist URL: ${url}\n原始文件: ${rawUrl}\n\n是否打开 Gist 页面？`)){
+    if(confirm(`✅ ${verb}成功！\n\nGist URL: ${url}${rawUrl?'\n原始文件: '+rawUrl:''}\n\n是否打开 Gist 页面？`)){
       window.open(url,'_blank');
     }
   }catch(e){
@@ -1175,19 +1177,22 @@ document.getElementById('btnGist').onclick=async()=>{
 function updateTokenStatus(){
   const status=document.getElementById('tokenStatus');
   if(!status)return;
-  const token=localStorage.getItem('github_token');
-  if(token){
-    status.innerHTML=' <button onclick="clearToken()" style="border:1px solid var(--ln);border-radius:8px;padding:2px 8px;background:var(--sf2);font:11px inherit;cursor:pointer;margin-left:8px">已保存 Token（点击清除）</button>';
+  const cfg=getGistConfig();
+  if(cfg.token){
+    const gistInfo=cfg.gistId?` | Gist: ${cfg.gistId.slice(0,10)}...`:'';
+    status.innerHTML=` <span style="font-size:12px;color:var(--mt)">${cfg.token.slice(0,8)}...${gistInfo}</span> <button onclick="clearToken()" style="border:1px solid var(--ln);border-radius:8px;padding:2px 8px;background:var(--sf2);font:11px inherit;cursor:pointer;margin-left:4px">清除</button>`;
   }else{
     status.innerHTML='';
   }
 }
 
 function clearToken(){
-  if(confirm('确定清除已保存的 GitHub Token？')){
+  if(confirm('确定清除已保存的 GitHub Token 和 Gist ID？')){
     localStorage.removeItem('github_token');
+    localStorage.removeItem('gist_id');
+    localStorage.removeItem('gist_ids');
     updateTokenStatus();
-    alert('Token 已清除');
+    alert('已清除');
   }
 }
 
@@ -1333,19 +1338,24 @@ async function fetchFromGist(){
 function updateTokenStatusGist(){
   const status=document.getElementById('tokenStatusGist');
   if(!status)return;
-  const token=localStorage.getItem('github_token');
-  if(token){
-    status.innerHTML=' <button onclick="clearTokenGist()" style="border:1px solid var(--ln);border-radius:8px;padding:2px 8px;background:var(--sf2);font:11px inherit;cursor:pointer;margin-left:4px">已保存（清除）</button>';
+  const cfg=getGistConfig();
+  if(cfg.token){
+    const gistInfo=cfg.gistId?` | Gist: ${cfg.gistId.slice(0,10)}...`:'';
+    status.innerHTML=` <span style="font-size:12px;color:var(--mt)">${cfg.token.slice(0,8)}...${gistInfo}</span> <button onclick="clearTokenGist()" style="border:1px solid var(--ln);border-radius:8px;padding:2px 8px;background:var(--sf2);font:11px inherit;cursor:pointer;margin-left:4px">清除</button>`;
   }else{
     status.innerHTML='';
   }
 }
+  }
+}
 
 function clearTokenGist(){
-  if(confirm('确定清除已保存的 GitHub Token？')){
+  if(confirm('确定清除已保存的 GitHub Token 和 Gist ID？')){
     localStorage.removeItem('github_token');
+    localStorage.removeItem('gist_id');
+    localStorage.removeItem('gist_ids');
     updateTokenStatusGist();
-    alert('Token 已清除');
+    alert('已清除');
   }
 }
 
