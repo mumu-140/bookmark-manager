@@ -3,21 +3,24 @@
  * 参考：index.html 第 1142-1174 行的 fetchFromGist 逻辑
  */
 
-// 导入解析器
+// 导入解析器和提取器
 importScripts('parser.js');
+importScripts('extract.js');
 
 /**
  * 从 chrome.storage.sync 获取配置
  */
 async function getConfig() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['gistUrl', 'githubToken', 'preferredFormat', 'lastSync', 'flattenTopFolder'], (result) => {
+    chrome.storage.sync.get(['gistUrl', 'githubToken', 'preferredFormat', 'lastSync', 'flattenTopFolder', 'uploadMode', 'gistId'], (result) => {
       resolve({
         gistUrl: result.gistUrl || '',
         githubToken: result.githubToken || '',
         preferredFormat: result.preferredFormat || 'auto',
         lastSync: result.lastSync || 0,
-        flattenTopFolder: result.flattenTopFolder !== false  // 默认为 true
+        flattenTopFolder: result.flattenTopFolder !== false,  // 默认为 true
+        uploadMode: result.uploadMode || 'fixed',  // 默认为 fixed
+        gistId: result.gistId || ''
       });
     });
   });
@@ -242,15 +245,157 @@ async function syncBookmarks(sendProgress) {
 }
 
 /**
+ * 上传到 Gist（固定 ID 模式）
+ */
+async function updateGist(gistId, content, filename, token) {
+  const apiUrl = `https://api.github.com/gists/${gistId}`;
+
+  const response = await fetch(apiUrl, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `token ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      files: {
+        [filename]: {
+          content: content
+        }
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `更新 Gist 失败 (${response.status})`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * 上传到 Gist（新建 ID 模式）
+ */
+async function createGist(content, filename, token, isPublic = false) {
+  const apiUrl = 'https://api.github.com/gists';
+
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `token ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      description: 'Browser bookmarks backup',
+      public: isPublic,
+      files: {
+        [filename]: {
+          content: content
+        }
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `创建 Gist 失败 (${response.status})`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * 主上传函数
+ */
+async function uploadBookmarks(sendProgress) {
+  try {
+    // 1. 获取配置
+    sendProgress({ status: 'loading', message: '读取配置...' });
+    const config = await getConfig();
+
+    if (!config.githubToken) {
+      throw new Error('未配置 GitHub Token。请先打开扩展选项页进行配置');
+    }
+
+    // 2. 提取书签
+    sendProgress({ status: 'loading', message: '提取书签数据...' });
+    const bookmarks = await extractAllBookmarks();
+
+    // 3. 转换格式（根据 preferredFormat）
+    sendProgress({ status: 'loading', message: '转换格式...' });
+    let content, filename;
+
+    const timestamp = Date.now();
+
+    if (config.preferredFormat === 'bookmarkhub' || config.preferredFormat === 'auto') {
+      content = JSON.stringify(exportToBookmarkHub(bookmarks), null, 2);
+      filename = `bookmarks-${timestamp}.BookmarkHub.txt`;
+    } else {
+      content = exportToChromiumHtml(bookmarks);
+      filename = `bookmarks-${timestamp}.html`;
+    }
+
+    // 4. 上传
+    let result;
+    if (config.uploadMode === 'fixed') {
+      if (!config.gistId) {
+        throw new Error('固定模式需要配置 Gist ID。请先打开扩展选项页进行配置');
+      }
+      sendProgress({ status: 'loading', message: '更新 Gist...' });
+      result = await updateGist(config.gistId, content, filename, config.githubToken);
+    } else {
+      sendProgress({ status: 'loading', message: '创建新 Gist...' });
+      result = await createGist(content, filename, config.githubToken);
+    }
+
+    // 5. 计算书签数量
+    const count = countBookmarks(bookmarks);
+
+    // 6. 成功
+    sendProgress({
+      status: 'success',
+      message: `上传成功！已保存 ${count} 个书签到 Gist`,
+      count: count,
+      gistUrl: result.html_url,
+      timestamp: Date.now()
+    });
+
+  } catch (error) {
+    sendProgress({
+      status: 'error',
+      message: error.message || '上传失败'
+    });
+  }
+}
+
+/**
  * 监听来自 popup 的消息
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'sync') {
-    // 执行同步
+  if (request.action === 'sync' || request.action === 'download') {
+    // 执行下载同步（原 sync 逻辑）
     syncBookmarks((progress) => {
       // 发送进度更新到 popup
       chrome.runtime.sendMessage({
-        action: 'syncProgress',
+        action: request.action === 'download' ? 'downloadProgress' : 'syncProgress',
+        data: progress
+      }).catch(() => {
+        // Popup 可能已关闭，忽略错误
+      });
+    }).then(() => {
+      sendResponse({ success: true });
+    });
+
+    // 返回 true 表示异步响应
+    return true;
+  }
+
+  if (request.action === 'upload') {
+    // 执行上传
+    uploadBookmarks((progress) => {
+      // 发送进度更新到 popup
+      chrome.runtime.sendMessage({
+        action: 'uploadProgress',
         data: progress
       }).catch(() => {
         // Popup 可能已关闭，忽略错误

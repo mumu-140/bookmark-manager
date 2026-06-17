@@ -94,7 +94,7 @@
     }
 
     .sync-button {
-      width: 100%;
+      flex: 1;
       padding: 14px;
       border: none;
       border-radius: var(--radius);
@@ -109,6 +109,12 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
+    }
+
+    .sync-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
     .sync-button:hover:not(:disabled) {
@@ -217,9 +223,14 @@
     </div>
   </div>
 
-  <button class="sync-button" id="syncBtn">
-    <span id="syncBtnText">⚡ 立即同步</span>
-  </button>
+  <div class="sync-actions">
+    <button class="sync-button" id="uploadBtn">
+      <span id="uploadBtnText">📤 上传书签</span>
+    </button>
+    <button class="sync-button" id="downloadBtn">
+      <span id="downloadBtnText">📥 覆盖下载</span>
+    </button>
+  </div>
 
   <div id="message" class="message"></div>
 

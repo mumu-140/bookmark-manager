@@ -2,8 +2,10 @@
  * Popup Script - 弹出窗口逻辑
  */
 
-const syncBtn = document.getElementById('syncBtn');
-const syncBtnText = document.getElementById('syncBtnText');
+const uploadBtn = document.getElementById('uploadBtn');
+const uploadBtnText = document.getElementById('uploadBtnText');
+const downloadBtn = document.getElementById('downloadBtn');
+const downloadBtnText = document.getElementById('downloadBtnText');
 const configStatusEl = document.getElementById('configStatus');
 const lastSyncEl = document.getElementById('lastSync');
 const messageEl = document.getElementById('message');
@@ -12,7 +14,8 @@ const helpBtn = document.getElementById('helpBtn');
 const compareBtn = document.getElementById('compareBtn');
 const extractBtn = document.getElementById('extractBtn');
 
-let isSyncing = false;
+let isUploading = false;
+let isDownloading = false;
 
 /**
  * 显示消息
@@ -75,15 +78,28 @@ function formatTime(timestamp) {
  * 加载配置状态
  */
 function loadStatus() {
-  chrome.storage.sync.get(['gistUrl', 'lastSync'], (result) => {
+  chrome.storage.sync.get(['gistUrl', 'githubToken', 'lastSync', 'uploadMode', 'gistId'], (result) => {
     // 配置状态
-    if (result.gistUrl) {
+    const hasDownloadConfig = !!result.gistUrl;
+    const hasUploadConfig = !!result.githubToken && (result.uploadMode !== 'fixed' || !!result.gistId);
+
+    if (hasDownloadConfig) {
       configStatusEl.innerHTML = '<span class="status status-configured">✓ 已配置</span>';
-      syncBtn.disabled = false;
     } else {
       configStatusEl.innerHTML = '<span class="status status-not-configured">未配置</span>';
-      syncBtn.disabled = true;
-      showMessage('请先点击"⚙️ 配置"按钮设置 Gist URL', 'info');
+    }
+
+    // 按钮状态
+    downloadBtn.disabled = !hasDownloadConfig;
+    uploadBtn.disabled = !hasUploadConfig;
+
+    // 提示信息
+    if (!hasDownloadConfig && !hasUploadConfig) {
+      showMessage('请先点击"⚙️ 配置"按钮设置 Gist URL 和 Token', 'info');
+    } else if (!hasDownloadConfig) {
+      showMessage('请先配置 Gist URL 以使用下载功能', 'info');
+    } else if (!hasUploadConfig) {
+      showMessage('请先配置 GitHub Token 以使用上传功能', 'info');
     }
 
     // 上次同步时间
@@ -92,10 +108,36 @@ function loadStatus() {
 }
 
 /**
- * 执行同步
+ * 执行上传
  */
-function performSync() {
-  if (isSyncing) return;
+function performUpload() {
+  if (isUploading) return;
+
+  // 二次确认
+  const confirmed = confirm(
+    '⚠️ 上传确认\n\n' +
+    '即将上传当前浏览器的所有书签到 Gist\n\n' +
+    '确定要继续吗？'
+  );
+
+  if (!confirmed) return;
+
+  isUploading = true;
+  uploadBtn.disabled = true;
+  uploadBtnText.innerHTML = '<span class="spinner"></span> 上传中...';
+  hideMessage();
+
+  // 发送上传请求到 background
+  chrome.runtime.sendMessage({ action: 'upload' }, (response) => {
+    // 上传请求已发送，等待进度更新
+  });
+}
+
+/**
+ * 执行下载（原 performSync）
+ */
+function performDownload() {
+  if (isDownloading) return;
 
   // 二次确认
   const confirmed = confirm(
@@ -109,14 +151,14 @@ function performSync() {
 
   if (!confirmed) return;
 
-  isSyncing = true;
-  syncBtn.disabled = true;
-  syncBtnText.innerHTML = '<span class="spinner"></span> 同步中...';
+  isDownloading = true;
+  downloadBtn.disabled = true;
+  downloadBtnText.innerHTML = '<span class="spinner"></span> 下载中...';
   hideMessage();
 
-  // 发送同步请求到 background
-  chrome.runtime.sendMessage({ action: 'sync' }, (response) => {
-    // 同步请求已发送，等待进度更新
+  // 发送下载请求到 background
+  chrome.runtime.sendMessage({ action: 'download' }, (response) => {
+    // 下载请求已发送，等待进度更新
   });
 }
 
@@ -124,17 +166,53 @@ function performSync() {
  * 监听来自 background 的进度更新
  */
 chrome.runtime.onMessage.addListener((request) => {
-  if (request.action === 'syncProgress') {
+  if (request.action === 'uploadProgress') {
+    const { status, message, count, gistUrl, timestamp } = request.data;
+
+    if (status === 'loading') {
+      // 上传进行中
+      uploadBtnText.innerHTML = `<span class="spinner"></span> ${message}`;
+    } else if (status === 'success') {
+      // 上传成功
+      isUploading = false;
+      uploadBtn.disabled = false;
+      uploadBtnText.textContent = '✓ 上传成功';
+
+      let msg = message;
+      if (gistUrl) {
+        msg += `\n\nGist URL: ${gistUrl}`;
+      }
+      showMessage(msg, 'success');
+
+      // 3 秒后恢复按钮文本
+      setTimeout(() => {
+        uploadBtnText.textContent = '📤 上传书签';
+      }, 3000);
+    } else if (status === 'error') {
+      // 上传失败
+      isUploading = false;
+      uploadBtn.disabled = false;
+      uploadBtnText.textContent = '✗ 上传失败';
+
+      showMessage(`上传失败：${message}`, 'error');
+
+      // 3 秒后恢复按钮文本
+      setTimeout(() => {
+        uploadBtnText.textContent = '📤 上传书签';
+        loadStatus(); // 重新检查配置
+      }, 3000);
+    }
+  } else if (request.action === 'downloadProgress' || request.action === 'syncProgress') {
     const { status, message, count, timestamp } = request.data;
 
     if (status === 'loading') {
-      // 同步进行中
-      syncBtnText.innerHTML = `<span class="spinner"></span> ${message}`;
+      // 下载进行中
+      downloadBtnText.innerHTML = `<span class="spinner"></span> ${message}`;
     } else if (status === 'success') {
-      // 同步成功
-      isSyncing = false;
-      syncBtn.disabled = false;
-      syncBtnText.textContent = '✓ 同步成功';
+      // 下载成功
+      isDownloading = false;
+      downloadBtn.disabled = false;
+      downloadBtnText.textContent = '✓ 下载成功';
 
       showMessage(message, 'success');
 
@@ -145,19 +223,19 @@ chrome.runtime.onMessage.addListener((request) => {
 
       // 3 秒后恢复按钮文本
       setTimeout(() => {
-        syncBtnText.textContent = '⚡ 立即同步';
+        downloadBtnText.textContent = '📥 覆盖下载';
       }, 3000);
     } else if (status === 'error') {
-      // 同步失败
-      isSyncing = false;
-      syncBtn.disabled = false;
-      syncBtnText.textContent = '✗ 同步失败';
+      // 下载失败
+      isDownloading = false;
+      downloadBtn.disabled = false;
+      downloadBtnText.textContent = '✗ 下载失败';
 
-      showMessage(`同步失败：${message}`, 'error');
+      showMessage(`下载失败：${message}`, 'error');
 
       // 3 秒后恢复按钮文本
       setTimeout(() => {
-        syncBtnText.textContent = '⚡ 立即同步';
+        downloadBtnText.textContent = '📥 覆盖下载';
         loadStatus(); // 重新检查配置
       }, 3000);
     }
@@ -201,7 +279,8 @@ function openHelp() {
 }
 
 // 事件监听
-syncBtn.addEventListener('click', performSync);
+uploadBtn.addEventListener('click', performUpload);
+downloadBtn.addEventListener('click', performDownload);
 compareBtn.addEventListener('click', openCompare);
 extractBtn.addEventListener('click', openExtract);
 optionsBtn.addEventListener('click', openOptions);

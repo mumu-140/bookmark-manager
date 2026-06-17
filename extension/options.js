@@ -5,6 +5,8 @@
 const form = document.getElementById('configForm');
 const gistUrlInput = document.getElementById('gistUrl');
 const githubTokenInput = document.getElementById('githubToken');
+const gistIdInput = document.getElementById('gistId');
+const gistIdGroup = document.getElementById('gistIdGroup');
 const saveBtn = document.getElementById('saveBtn');
 const testBtn = document.getElementById('testBtn');
 const alertBox = document.getElementById('alert');
@@ -24,10 +26,22 @@ function showAlert(message, type = 'info') {
 }
 
 /**
+ * 根据上传模式更新 Gist ID 输入框的可见性
+ */
+function updateGistIdVisibility() {
+  const uploadMode = document.querySelector('input[name="uploadMode"]:checked')?.value;
+  if (uploadMode === 'fixed') {
+    gistIdGroup.classList.remove('hidden');
+  } else {
+    gistIdGroup.classList.add('hidden');
+  }
+}
+
+/**
  * 加载已保存的配置
  */
 function loadConfig() {
-  chrome.storage.sync.get(['gistUrl', 'githubToken', 'preferredFormat', 'flattenTopFolder'], (result) => {
+  chrome.storage.sync.get(['gistUrl', 'githubToken', 'preferredFormat', 'flattenTopFolder', 'uploadMode', 'gistId'], (result) => {
     if (result.gistUrl) {
       gistUrlInput.value = result.gistUrl;
     }
@@ -45,6 +59,21 @@ function loadConfig() {
     if (flattenCheckbox) {
       flattenCheckbox.checked = result.flattenTopFolder !== false;
     }
+
+    // 加载上传模式（默认为 fixed）
+    const uploadMode = result.uploadMode || 'fixed';
+    const uploadModeRadio = document.querySelector(`input[name="uploadMode"][value="${uploadMode}"]`);
+    if (uploadModeRadio) {
+      uploadModeRadio.checked = true;
+    }
+
+    // 加载 Gist ID
+    if (result.gistId) {
+      gistIdInput.value = result.gistId;
+    }
+
+    // 根据上传模式显示/隐藏 Gist ID 输入框
+    updateGistIdVisibility();
   });
 }
 
@@ -58,6 +87,8 @@ function saveConfig(e) {
   const githubToken = githubTokenInput.value.trim();
   const preferredFormat = document.querySelector('input[name="format"]:checked').value;
   const flattenTopFolder = document.getElementById('flattenTopFolder').checked;
+  const uploadMode = document.querySelector('input[name="uploadMode"]:checked').value;
+  const gistId = gistIdInput.value.trim();
 
   if (!gistUrl) {
     showAlert('请输入 Gist URL', 'error');
@@ -70,6 +101,13 @@ function saveConfig(e) {
     return;
   }
 
+  // 如果是固定模式，验证 Gist ID
+  if (uploadMode === 'fixed' && !gistId) {
+    showAlert('固定模式需要填写 Gist ID', 'error');
+    gistIdInput.focus();
+    return;
+  }
+
   saveBtn.disabled = true;
   saveBtn.textContent = '保存中...';
 
@@ -78,7 +116,9 @@ function saveConfig(e) {
       gistUrl: gistUrl,
       githubToken: githubToken,
       preferredFormat: preferredFormat,
-      flattenTopFolder: flattenTopFolder
+      flattenTopFolder: flattenTopFolder,
+      uploadMode: uploadMode,
+      gistId: gistId
     },
     () => {
       saveBtn.disabled = false;
@@ -140,6 +180,11 @@ function testConnection() {
 // 事件监听
 form.addEventListener('submit', saveConfig);
 testBtn.addEventListener('click', testConnection);
+
+// 监听上传模式变化
+document.querySelectorAll('input[name="uploadMode"]').forEach(radio => {
+  radio.addEventListener('change', updateGistIdVisibility);
+});
 
 // 页面加载时加载配置
 loadConfig();

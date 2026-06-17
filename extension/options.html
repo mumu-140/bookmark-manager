@@ -243,6 +243,10 @@
     .footer a:hover {
       text-decoration: underline;
     }
+
+    #gistIdGroup.hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -303,6 +307,40 @@
               </span>
             </label>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label>上传模式</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="uploadMode" value="fixed" checked>
+              <span class="radio-label">
+                <strong>固定 Gist ID（更新现有）</strong>
+                <span>每次上传到同一个 Gist，适合日常备份</span>
+              </span>
+            </label>
+
+            <label class="radio-option">
+              <input type="radio" name="uploadMode" value="new">
+              <span class="radio-label">
+                <strong>每次新建 Gist</strong>
+                <span>每次上传创建新的 Gist，适合存档备份</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" id="gistIdGroup">
+          <label for="gistId">Gist ID（固定模式）*</label>
+          <input
+            type="text"
+            id="gistId"
+            placeholder="abc123def456..."
+          >
+          <p class="help-text">
+            从 Gist URL 中提取的 ID（例如：https://gist.github.com/username/<strong>abc123...</strong>）。
+            用于更新现有 Gist。
+          </p>
         </div>
 
         <div class="form-group">
