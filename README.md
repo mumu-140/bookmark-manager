@@ -32,7 +32,7 @@
 
 ## 试用
 
-**直接打开：https://bms.yanggod.bond**
+**直接打开：https://bm.yangsen666.cloud**
 
 无需注册、无需安装、无后端服务。所有书签数据只在你自己的浏览器里处理，不上传到任何服务器。可打开浏览器开发者工具的 Network 面板验证 —— 加载完 HTML 之后再无任何外部请求。
 
@@ -192,7 +192,7 @@ Safari 导出 → 在线工具审核/转换 → 上传到 Gist
 
 ### 模式 1：Gist 云端备份（推荐）
 
-用浏览器打开 `index.html`（本地）或访问 https://bms.yanggod.bond ，选择 **☁️ Gist 云端备份**。
+用浏览器打开 `index.html`（本地）或访问 https://bm.yangsen666.cloud ，选择 **☁️ Gist 云端备份**。
 
 #### 上传到 Gist
 1. 导入书签文件（Safari / Chrome / Edge HTML 或 BookmarkHub JSON）
@@ -212,7 +212,7 @@ Safari 导出 → 在线工具审核/转换 → 上传到 Gist
 
 ### 模式 2：双向对比审核
 
-用浏览器打开 `index.html` 或访问 https://bms.yanggod.bond ，选择 **⚖️ 双向对比审核**。
+用浏览器打开 `index.html` 或访问 https://bm.yangsen666.cloud ，选择 **⚖️ 双向对比审核**。
 
 1. 分别导入 A、B 两份书签文件（支持 Netscape HTML 和 BookmarkHub JSON，自动识别）
 2. 工具自动解析、归一化 URL、对比差异，生成三类审核项：

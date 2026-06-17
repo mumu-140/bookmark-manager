@@ -4,7 +4,7 @@
 
 ### 在线使用（推荐）
 
-访问 **https://bms.yanggod.bond**，无需安装。
+访问 **https://bm.yangsen666.cloud**，无需安装。
 
 ### 本地使用
 

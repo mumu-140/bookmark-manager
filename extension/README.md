@@ -51,7 +51,7 @@ _即将发布到 Chrome Web Store 和 Edge Add-ons_
 有两种方式：
 
 **方式 A：使用主项目工具上传**
-1. 打开 https://bms.yanggod.bond
+1. 打开 https://bm.yangsen666.cloud
 2. 导入书签并转换为 BookmarkHub.txt 或 HTML 格式
 3. 点击"☁️ 上传到 Gist"
 4. 复制返回的 Gist URL
@@ -214,7 +214,7 @@ extension/
 ## 相关链接
 
 - [主项目仓库](https://github.com/mumu-140/bookmark-manager)
-- [在线书签管理工具](https://bms.yanggod.bond)
+- [在线书签管理工具](https://bm.yangsen666.cloud)
 - [GitHub Gist 文档](https://docs.github.com/en/rest/gists)
 - [问题反馈](https://github.com/mumu-140/bookmark-manager/issues)
 

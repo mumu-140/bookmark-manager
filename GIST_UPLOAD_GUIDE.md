@@ -20,7 +20,7 @@
 
 #### 方式 A：从 Safari 直接导出并上传
 
-1. 打开 https://bms.yanggod.bond （或本地 `index.html`）
+1. 打开 https://bm.yangsen666.cloud （或本地 `index.html`）
 2. 导入 Safari 导出的书签 HTML 文件
 3. 进行审核（保留/删除/同步操作）
 4. 在导出选项中选择：

@@ -34,7 +34,7 @@ cd bookmark-manager/extension
 ### 3. 配置扩展
 
 1. **获取 Gist URL**：
-   - 访问 https://bms.yanggod.bond
+   - 访问 https://bm.yangsen666.cloud
    - 导入 Safari 书签 → 选择格式 → 上传到 Gist
    - 复制返回的 Gist URL
 

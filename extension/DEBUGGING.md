@@ -93,7 +93,7 @@ fetch('https://api.github.com/gists/你的gist_id')
 如果你还没有测试 Gist，可以创建一个：
 
 **方法 1：使用主项目工具**
-1. 访问 https://bms.yanggod.bond
+1. 访问 https://bm.yangsen666.cloud
 2. 点击"☁️ Gist 云端备份"
 3. 导入一个简单的书签文件
 4. 选择 BookmarkHub.txt 格式
