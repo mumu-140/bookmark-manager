@@ -1065,10 +1065,7 @@ async function uploadToGistShared(content,filename,description,fmt){
   let method='POST',apiUrl='https://api.github.com/gists';
 
   if(exactMatch){
-    hideLoading();
-    if(confirm(`此前上传过同名文件 ${filename}\nGist ID: ${exactMatch}\n\n确定 = 覆盖更新该 Gist\n取消 = 创建一个新的 Gist`)){
-      method='PATCH';apiUrl+='/'+exactMatch;
-    }
+    method='PATCH';apiUrl+='/'+exactMatch;
   }else if(similarGists.length>0){
     hideLoading();
     const options=similarGists.map(([name,id],i)=>`${i+1}. ${name} (ID: ${id.slice(0,8)}...)`).join('\n');
