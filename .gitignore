@@ -1,13 +1,34 @@
+# macOS / editor
+.DS_Store
+
+# Local agent and code-index state
+.claude/
+.codegraph/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Generated outputs
+output/
+dist/
+build/
+
+# Personal browser exports and temporary bookmark files
 *.html
 !index.html
+*.htm
 *.zip
 *.xlsx
 *.json
 !package.json
-.DS_Store
-.codegraph/
-.claude/
-__pycache__/
-output/
+!*.schema.json
 202*/
 Safari*/
+Safari浏览器导出*/
+*书签*/
+
+# Local secrets or scratch notes
+.env
+.env.*
+*.local

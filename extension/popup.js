@@ -539,7 +539,7 @@ function openOptions() {
  */
 function openHelp() {
   chrome.tabs.create({
-    url: 'https://github.com/mumu-140/bookmark-manager#readme'
+    url: chrome.runtime.getURL('README.md')
   });
 }
 

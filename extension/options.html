@@ -352,7 +352,20 @@
           </div>
         </div>
 
-        <!-- 5. 自动移除顶层文件夹 -->
+        <!-- 5. 完整网页版地址 -->
+        <div class="form-group">
+          <label for="webAppUrl">完整网页版工具地址</label>
+          <input
+            type="text"
+            id="webAppUrl"
+            placeholder="https://<your-site-url>"
+          >
+          <p class="help-text">
+            可选。用于扩展对比页跳转到完整 Web 工具。请填写你自己的部署地址。
+          </p>
+        </div>
+
+        <!-- 6. 自动移除顶层文件夹 -->
         <div class="form-group">
           <label style="display: flex; align-items: center; cursor: pointer;">
             <input type="checkbox" id="flattenTopFolder" style="margin-right: 8px; cursor: pointer;" checked>
@@ -383,7 +396,7 @@
 
     <div class="footer">
       <p>Token 仅存储在本地浏览器，不会上传到任何服务器</p>
-      <p><a href="https://github.com/mumu-140/bookmark-manager" target="_blank">查看项目文档</a></p>
+      <p><a href="README.md" target="_blank">查看扩展文档</a></p>
     </div>
   </div>
 

@@ -45,11 +45,19 @@ function init() {
   compareBtn.addEventListener('click', performCompare);
 
   // 打开网页版
-  openWebBtn.addEventListener('click', () => {
-    chrome.tabs.create({
-      url: 'https://bm.yangsen666.cloud'
-    });
+  openWebBtn.addEventListener('click', openWebTool);
+}
+
+async function openWebTool() {
+  const config = await new Promise(resolve => {
+    chrome.storage.sync.get(['webAppUrl'], resolve);
   });
+  const url = (config.webAppUrl || '').trim();
+  if (!url) {
+    alert('未配置完整网页版工具地址。请在扩展配置页填写你的部署地址。');
+    return;
+  }
+  chrome.tabs.create({ url });
 }
 
 /**
@@ -199,16 +207,13 @@ function performCompare() {
 
 💡 提示：此为简化版对比，仅显示数量统计。
 
-要进行详细的逐条对比和审核，请使用完整网页版工具：
-https://bm.yangsen666.cloud
+要进行详细的逐条对比和审核，请使用完整网页版工具。
 
 点击"确定"打开网页版？
     `;
 
     if (confirm(message.trim())) {
-      chrome.tabs.create({
-        url: 'https://bm.yangsen666.cloud'
-      });
+      openWebTool();
     }
 
     hideStatus();

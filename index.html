@@ -1058,7 +1058,7 @@ async function uploadToGistShared(content,filename,description,fmt){
 
   if(!cfg.token){
     hideLoading();
-    const input=prompt('首次上传，请配置 GitHub Gist\n\nToken（必需）：GitHub Personal Access Token\n  权限: gist\n  获取: https://github.com/settings/tokens/new\n\nGist ID（可选）：已有 Gist 的 ID\n  留空则自动创建新 Gist\n\n格式：Token,GistID\n示例：ghp_xxxx,abc123def456');
+    const input=prompt('首次上传，请配置 GitHub Gist\n\nToken（必需）：GitHub Personal Access Token\n  权限: gist\n  获取: https://github.com/settings/tokens/new\n\nGist ID（可选）：已有 Gist 的 ID\n  留空则自动创建新 Gist\n\n格式：Token,GistID\n示例：<token-with-gist-scope>,<gist-id>');
     if(!input)return;
     const parts=input.split(',').map(s=>s.trim());
     const newToken=parts[0]||'';

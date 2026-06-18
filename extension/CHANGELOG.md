@@ -157,7 +157,7 @@
 - 清理生产环境不需要的 console.log
 
 ### Documentation
-- 文档重组：DEBUGGING.md、INSTALL.md、INTEGRATION_PLAN.md 移至 docs/ 目录
+- 文档重组：安装、调试和集成说明已收敛到扩展 README
 
 ## [1.2.0] - 2026-06-17
 

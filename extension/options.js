@@ -7,6 +7,7 @@ const uploadGistUrlInput = document.getElementById('uploadGistUrl');
 const downloadGistUrlInput = document.getElementById('downloadGistUrl');
 const uploadGistUrlGroup = document.getElementById('uploadGistUrlGroup');
 const githubTokenInput = document.getElementById('githubToken');
+const webAppUrlInput = document.getElementById('webAppUrl');
 const saveBtn = document.getElementById('saveBtn');
 const testBtn = document.getElementById('testBtn');
 const alertBox = document.getElementById('alert');
@@ -41,7 +42,7 @@ function updateUploadGistUrlVisibility() {
  * 加载已保存的配置
  */
 function loadConfig() {
-  chrome.storage.sync.get(['uploadGistUrl', 'downloadGistUrl', 'githubToken', 'preferredFormat', 'flattenTopFolder', 'uploadMode'], (result) => {
+  chrome.storage.sync.get(['uploadGistUrl', 'downloadGistUrl', 'githubToken', 'preferredFormat', 'flattenTopFolder', 'uploadMode', 'webAppUrl'], (result) => {
     // 加载上传目标 Gist URL
     if (result.uploadGistUrl) {
       uploadGistUrlInput.value = result.uploadGistUrl;
@@ -55,6 +56,10 @@ function loadConfig() {
     // 加载 Token
     if (result.githubToken) {
       githubTokenInput.value = result.githubToken;
+    }
+
+    if (result.webAppUrl) {
+      webAppUrlInput.value = result.webAppUrl;
     }
 
     // 加载书签格式
@@ -92,6 +97,7 @@ function saveConfig(e) {
   const uploadGistUrl = uploadGistUrlInput.value.trim();
   const downloadGistUrl = downloadGistUrlInput.value.trim();
   const githubToken = githubTokenInput.value.trim();
+  const webAppUrl = webAppUrlInput.value.trim();
   const preferredFormat = document.querySelector('input[name="format"]:checked').value;
   const flattenTopFolder = document.getElementById('flattenTopFolder').checked;
   const uploadMode = document.querySelector('input[name="uploadMode"]:checked').value;
@@ -117,6 +123,11 @@ function saveConfig(e) {
     return;
   }
 
+  if (webAppUrl && !/^https?:\/\//i.test(webAppUrl)) {
+    showAlert('完整网页版工具地址必须以 http:// 或 https:// 开头', 'error');
+    return;
+  }
+
   saveBtn.disabled = true;
   saveBtn.textContent = '保存中...';
 
@@ -125,6 +136,7 @@ function saveConfig(e) {
       uploadGistUrl: uploadGistUrl,
       downloadGistUrl: downloadGistUrl,
       githubToken: githubToken,
+      webAppUrl: webAppUrl,
       preferredFormat: preferredFormat,
       flattenTopFolder: flattenTopFolder,
       uploadMode: uploadMode
