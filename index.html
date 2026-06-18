@@ -256,15 +256,15 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
           <option value="b_json">B · 树形 JSON</option>
           <option value="b_bookmarkhub">B · BookmarkHub.txt</option>
         </optgroup>
-        <optgroup label="─── 原始文件（未经审核）───">
-          <option value="raw_a_edge">A 原始 · Edge/Chrome HTML</option>
-          <option value="raw_a_safari">A 原始 · Safari HTML</option>
-          <option value="raw_a_json">A 原始 · 树形 JSON</option>
-          <option value="raw_a_bookmarkhub">A 原始 · BookmarkHub.txt</option>
-          <option value="raw_b_edge">B 原始 · Edge/Chrome HTML</option>
-          <option value="raw_b_safari">B 原始 · Safari HTML</option>
-          <option value="raw_b_json">B 原始 · 树形 JSON</option>
-          <option value="raw_b_bookmarkhub">B 原始 · BookmarkHub.txt</option>
+        <optgroup label="─── 原始数据重新导出（未经审核）───">
+          <option value="raw_a_edge">A 原始数据 · Edge/Chrome HTML</option>
+          <option value="raw_a_safari">A 原始数据 · Safari HTML</option>
+          <option value="raw_a_json">A 原始数据 · 树形 JSON</option>
+          <option value="raw_a_bookmarkhub">A 原始数据 · BookmarkHub.txt</option>
+          <option value="raw_b_edge">B 原始数据 · Edge/Chrome HTML</option>
+          <option value="raw_b_safari">B 原始数据 · Safari HTML</option>
+          <option value="raw_b_json">B 原始数据 · 树形 JSON</option>
+          <option value="raw_b_bookmarkhub">B 原始数据 · BookmarkHub.txt</option>
         </optgroup>
         <optgroup label="─── 导入的原始文件（原样上传）───">
           <option value="rawfile_a">A 侧原文件</option>
@@ -294,7 +294,7 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
   </section>
   <section class="list" id="list"></section>
   <p class="foot">审核完成后选择导出格式：决策 JSON、Edge/Chrome HTML、Safari HTML、树形 JSON 或 BookmarkHub.txt。<br>
-  <strong>审核后的合并结果</strong>：根据你的操作（删除/同步/保留）生成最终书签。<strong>原始文件（未经审核）</strong>：直接导出 A 或 B 的完整内容，不包含任何修改。<br>
+  <strong>审核后的合并结果</strong>：根据你的操作（删除/同步/保留）生成最终书签。<strong>原始数据重新导出</strong>：不应用审核决策，但会转换为所选格式。<strong>导入的原始文件</strong>：按字节内容原样上传。<br>
   点击 📤 Gist 可直接上传到 GitHub Gist（需要 Personal Access Token，权限: gist）。<span id="tokenStatus"></span></p>
 </main>
 </div>
@@ -484,7 +484,7 @@ function fallbackCopy(text,btn){
   if(src&&pre)pre.textContent=src.textContent;
 })();
 
-const ROOT=new Set(['个人收藏','收藏夹栏','Favorites Bar','Bookmarks Bar','BookmarksBar','书签栏','其他书签','Other Bookmarks','Untitled','bookmarks']);
+const ROOT=new Set(['个人收藏','收藏夹栏','Favorites Bar','Bookmarks Bar','BookmarksBar','ToolbarFolder','书签栏','其他收藏夹','其他书签','Other Bookmarks','Untitled','bookmarks']);
 const SKIP_TOP=new Set(['小书签栏']);
 
 function parseHTML(text){
@@ -495,23 +495,39 @@ function parseHTML(text){
     else if(low.includes('<a ')){
       const hm=line.match(/HREF="([^"]*)"/i),tm=line.match(/<A[^>]*>(.*?)<\/A>/i);
       const url=hm?ent(hm[1]):'',title=tm?ent(tm[1]).trim():'Untitled';
+      const addDate=attrTs(line,'ADD_DATE'),lastModified=attrTs(line,'LAST_MODIFIED');
       const parts=stack.filter(p=>!ROOT.has(p));
-      bm.push({title:title||url||'Untitled',url,rawParts:[...stack],pathParts:[...parts],path:parts.join(' / ')||'(根目录)'});
+      bm.push({title:title||url||'Untitled',url,rawParts:[...stack],pathParts:[...parts],path:parts.join(' / ')||'(根目录)',addDate,lastModified});
     }else if(/<dl/i.test(low)){if(pf!==null){stack.push(pf);pf=null}}
     else if(/<\/dl/i.test(low)){if(stack.length)stack.pop();pf=null}
   }
   return bm;
 }
 function parseJSON(text){
-  const data=JSON.parse(text),nodes=data.nodes||data.bookmarks||(Array.isArray(data)?data:[]),bm=[];
+  const data=JSON.parse(text),nodes=data.nodes||data.bookmarks||data.tree||(Array.isArray(data)?data:[]),bm=[];
+  const defaultAddDate=normalizeTimestamp(data.createDate??data.exportDate??data.generatedAt);
   function walk(n,ps){
     const t=ent(n.title||n.name||'Untitled');
     if(Array.isArray(n.children)){const cp=ROOT.has(t)?ps:[...ps,t];for(const c of n.children)walk(c,cp)}
-    else if(n.url){const fp=ps.filter(p=>!ROOT.has(p));bm.push({title:t||n.url||'Untitled',url:n.url,rawParts:[...ps],pathParts:[...fp],path:fp.join(' / ')||'(根目录)'})}
+    else if(n.url){
+      const fp=ps.filter(p=>!ROOT.has(p));
+      const addDate=normalizeTimestamp(n.addDate??n.dateAdded) || defaultAddDate;
+      const lastModified=normalizeTimestamp(n.lastModified??n.dateGroupModified);
+      bm.push({title:t||n.url||'Untitled',url:n.url,rawParts:[...ps],pathParts:[...fp],path:fp.join(' / ')||'(根目录)',addDate,lastModified});
+    }
   }
   for(const n of nodes)walk(n,[]);return bm;
 }
 function ent(s){const el=document.createElement('textarea');el.innerHTML=s;return el.value}
+function normalizeTimestamp(v){
+  const n=Number(v);
+  if(!Number.isFinite(n)||n<=0)return undefined;
+  return Math.floor(n>1000000000000?n/1000:n);
+}
+function attrTs(text,name){
+  const m=text.match(new RegExp(name+'="([^"]*)"', 'i'));
+  return m?normalizeTimestamp(m[1]):undefined;
+}
 function autoParse(text){const t=text.trim();if(t[0]==='{'||t[0]==='[')return{bm:parseJSON(t),fmt:'JSON'};return{bm:parseHTML(text),fmt:'HTML'}}
 
 function decRep(s){let c=s.trim();for(let i=0;i<3;i++){try{const d=decodeURIComponent(c);if(d===c)break;c=d}catch{break}}return c}
@@ -753,7 +769,7 @@ function buildTree(entries,useRaw){
       if(!found){found={title:part,children:[]};cur.children.push(found)}
       cur=found;
     }
-    cur.children.push({title:e.title,url:e.url});
+    cur.children.push({title:e.title,url:e.url,addDate:e.addDate,lastModified:e.lastModified});
   }
   return root;
 }
@@ -858,7 +874,7 @@ function collectSide(side){
       const src=side==='a'?it.inB:it.inA;
       if(src){
         const e=src.best||src.entries[0];
-        added.push({title:e.title,url:it.url,rawParts:e.rawParts||e.pathParts||[],pathParts:e.pathParts||[]});
+        added.push({title:e.title,url:it.url,rawParts:e.rawParts||e.pathParts||[],pathParts:e.pathParts||[],addDate:e.addDate,lastModified:e.lastModified});
       }
     }
 
@@ -870,7 +886,7 @@ function collectSide(side){
         const otherInfo=side==='a'?it.inB:it.inA;
         if(otherInfo){
           const e=otherInfo.best||otherInfo.entries[0];
-          added.push({title:e.title,url:it.url,rawParts:e.rawParts||e.pathParts||[],pathParts:e.pathParts||[]});
+          added.push({title:e.title,url:it.url,rawParts:e.rawParts||e.pathParts||[],pathParts:e.pathParts||[],addDate:e.addDate,lastModified:e.lastModified});
         }
       }
     }
@@ -898,6 +914,15 @@ function dlFile(content,name,type){
 }
 
 function serializeBookmarkHub(tree){
+  function exportDateMs(){
+    let latest=0;
+    (function walk(node){
+      const ts=node.lastModified||node.addDate;
+      if(ts)latest=Math.max(latest,ts*1000);
+      if(node.children)node.children.forEach(walk);
+    })(tree);
+    return latest||Date.now();
+  }
   function convertNode(node){
     if(node.children){
       // 文件夹节点：键顺序匹配 Edge 格式 [children, syncing, title]
@@ -926,7 +951,7 @@ function serializeBookmarkHub(tree){
   const payload={
     browser:"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
     version:"0.0.6",
-    createDate:Date.now(),
+    createDate:exportDateMs(),
     bookmarks:[
       {
         children:rootChildren,
@@ -942,60 +967,32 @@ function serializeBookmarkHub(tree){
       }
     ]
   };
-  return JSON.stringify(payload);
+  return JSON.stringify(payload,null,2)+'\n';
 }
 
 document.getElementById('btnExport').onclick=()=>{
   const fmt=document.getElementById('exportType').value;
 
   if(fmt==='decisions'){
-    const decisions=DATA.items.map(it=>({id:it.id,type:it.type,action:state.get(it.id).action,note:state.get(it.id).note,item:it}));
-    const payload={version:3,exportedAt:new Date().toISOString(),sourceFiles:{a:DATA.nameA,b:DATA.nameB},summary:DATA.summary,decisions};
-    dlFile(JSON.stringify(payload,null,2),'bookmark-review-decisions.json','application/json;charset=utf-8');
+    const p=rememberReviewExport(fmt,decisionExportPayload());
+    dlFile(p.content,p.filename,p.mime);
     return;
   }
 
   function exportSide(side,which){
-    const entries=collectSide(side);
-    const tree=buildTree(entries,true);
-    const label=side==='a'?'A':'B';
-    const base=`bookmarks-${label}-merged`;
-    const tasks=[];
-    if(which==='edge'||which==='all') tasks.push(['edge-chrome.html', serializeHtmlChromium(tree), 'text/html;charset=utf-8']);
-    if(which==='safari'||which==='all') tasks.push(['safari.html',      serializeHtmlSafari(tree),   'text/html;charset=utf-8']);
-    if(which==='json'||which==='all')   tasks.push(['tree.json',         serializeTreeJson(tree),     'application/json;charset=utf-8']);
-    if(which==='bookmarkhub') tasks.push(['BookmarkHub.txt', serializeBookmarkHub(tree), 'text/plain;charset=utf-8']);
+    const choices=which==='all'?['edge','safari','json']:[which];
+    const tasks=choices.map(choice=>reviewSideExportPayload(side,choice,'merged'));
     let delay=0;
-    for(const [suffix,content,mime] of tasks){
-      setTimeout(()=>dlFile(content,`${base}.${suffix}`,mime),delay);
+    for(const p of tasks){
+      if(which!=='all')rememberReviewExport(fmt,p);
+      setTimeout(()=>dlFile(p.content,p.filename,p.mime),delay);
       delay+=250;
     }
   }
 
   function exportRaw(side,which){
-    const entries=side==='a'?DATA.allA:DATA.allB;
-    const tree=buildTree(entries,true);
-    const label=side==='a'?'A':'B';
-    const base=`bookmarks-${label}-original`;
-    let content,filename,mime;
-    if(which==='edge'){
-      content=serializeHtmlChromium(tree);
-      filename=`${base}.edge-chrome.html`;
-      mime='text/html;charset=utf-8';
-    }else if(which==='safari'){
-      content=serializeHtmlSafari(tree);
-      filename=`${base}.safari.html`;
-      mime='text/html;charset=utf-8';
-    }else if(which==='json'){
-      content=serializeTreeJson(tree);
-      filename=`${base}.tree.json`;
-      mime='application/json;charset=utf-8';
-    }else if(which==='bookmarkhub'){
-      content=serializeBookmarkHub(tree);
-      filename=`${base}.BookmarkHub.txt`;
-      mime='text/plain;charset=utf-8';
-    }
-    dlFile(content,filename,mime);
+    const p=rememberReviewExport(fmt,reviewSideExportPayload(side,which,'original'));
+    dlFile(p.content,p.filename,p.mime);
   }
 
   if(fmt==='a_all'){exportSide('a','all');return}
@@ -1092,25 +1089,45 @@ async function uploadToGistShared(content,filename,description,fmt){
 
   showLoading({title:'上传到 GitHub',text:method==='PATCH'?'正在覆盖更新 Gist...':'正在创建新 Gist...'});
 
-  const files={};files[filename]={content};
+  async function getExistingGistFileNames(){
+    if(!cfg.gistId)return [];
+    const resp=await fetch(apiUrl,{headers:{'Authorization':`token ${token}`}});
+    if(resp.status===404)return null;
+    if(!resp.ok)throw new Error(`读取现有 Gist 失败 (${resp.status}): ${await resp.text()}`);
+    const gist=await resp.json();
+    return Object.keys(gist.files||{});
+  }
 
-  async function doRequest(m,u){
+  function buildSingleFilePayload(existingNames){
+    const payload={};
+    for(const name of existingNames||[]){
+      if(name!==filename)payload[name]=null;
+    }
+    payload[filename]={content};
+    return payload;
+  }
+
+  async function doRequest(m,u,filePayload){
     return fetch(u,{
       method:m,
       headers:{'Authorization':`token ${token}`,'Content-Type':'application/json'},
-      body:JSON.stringify({description,public:false,files})
+      body:JSON.stringify({description,public:false,files:filePayload})
     });
   }
 
   try{
-    let resp=await doRequest(method,apiUrl);
+    let existingNames=[];
+    if(method==='PATCH'){
+      existingNames=await getExistingGistFileNames();
+    }
+    let resp=await doRequest(method,apiUrl,buildSingleFilePayload(existingNames));
 
     // 旧 Gist 已被删除 → 回退为新建
     if(method==='PATCH'&&resp.status===404){
       hideLoading();
       if(!confirm('原 Gist 已不存在（可能被删除）。是否创建新的 Gist？'))return;
       showLoading({title:'上传到 GitHub',text:'正在创建新 Gist...'});
-      resp=await doRequest('POST','https://api.github.com/gists');
+      resp=await doRequest('POST','https://api.github.com/gists',buildSingleFilePayload([]));
     }
 
     if(!resp.ok){
@@ -1155,14 +1172,77 @@ function buildExportPayload(tree,which){
   return{content:serializeBookmarkHub(tree),filename:'BookmarkHub.txt',description:'Bookmarks in BookmarkHub format',fmt:'bookmarkhub'};
 }
 
+let lastReviewExport=null;
+
+function reviewStateKey(fmt){
+  if(!DATA||!state)return fmt;
+  const decisions=DATA.items.map(it=>{
+    const s=state.get(it.id)||{};
+    return [it.id,s.action||'',s.note||''];
+  });
+  return JSON.stringify({fmt,nameA:DATA.nameA,nameB:DATA.nameB,summary:DATA.summary,decisions});
+}
+
+function rememberReviewExport(fmt,payload){
+  lastReviewExport={fmt,key:reviewStateKey(fmt),payload};
+  return payload;
+}
+
+function recallReviewExport(fmt){
+  if(!lastReviewExport)return null;
+  return lastReviewExport.fmt===fmt&&lastReviewExport.key===reviewStateKey(fmt)
+    ? lastReviewExport.payload
+    : null;
+}
+
+function decisionExportPayload(){
+  const decisions=DATA.items.map(it=>({id:it.id,type:it.type,action:state.get(it.id).action,note:state.get(it.id).note,item:it}));
+  const payload={version:3,exportedAt:new Date().toISOString(),sourceFiles:{a:DATA.nameA,b:DATA.nameB},summary:DATA.summary,decisions};
+  return{content:JSON.stringify(payload,null,2)+'\n',filename:'bookmark-review-decisions.json',description:'Bookmark review decisions',fmt:'decisions',mime:'application/json;charset=utf-8'};
+}
+
+function reviewSideExportPayload(side,which,kind){
+  const entries=kind==='merged'?collectSide(side):(side==='a'?DATA.allA:DATA.allB);
+  const tree=buildTree(entries,true);
+  const label=side==='a'?'A':'B';
+  const base=`bookmarks-${label}-${kind}`;
+  const p=buildExportPayload(tree,which);
+  const suffix={
+    edge:'edge-chrome.html',
+    safari:'safari.html',
+    json:'tree.json',
+    bookmarkhub:'BookmarkHub.txt'
+  }[which];
+  const mime={
+    edge:'text/html;charset=utf-8',
+    safari:'text/html;charset=utf-8',
+    json:'application/json;charset=utf-8',
+    bookmarkhub:'text/plain;charset=utf-8'
+  }[which];
+  return Object.assign({},p,{filename:`${base}.${suffix}`,mime});
+}
+
+function reviewSingleExportPayload(fmt){
+  if(fmt==='decisions')return decisionExportPayload();
+
+  const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],a_bookmarkhub:['a','bookmarkhub'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json'],b_bookmarkhub:['b','bookmarkhub']};
+  const sel=mapping[fmt];
+  if(sel)return reviewSideExportPayload(sel[0],sel[1],'merged');
+
+  const rawMapping={raw_a_edge:['a','edge'],raw_a_safari:['a','safari'],raw_a_json:['a','json'],raw_a_bookmarkhub:['a','bookmarkhub'],raw_b_edge:['b','edge'],raw_b_safari:['b','safari'],raw_b_json:['b','json'],raw_b_bookmarkhub:['b','bookmarkhub']};
+  const rawSel=rawMapping[fmt];
+  if(rawSel)return reviewSideExportPayload(rawSel[0],rawSel[1],'original');
+
+  return null;
+}
+
 document.getElementById('btnGist').onclick=async()=>{
   const fmt=document.getElementById('exportType').value;
 
   // ── 1. 决策 JSON ──
   if(fmt==='decisions'){
-    const decisions=DATA.items.map(it=>({id:it.id,type:it.type,action:state.get(it.id).action,note:state.get(it.id).note,item:it}));
-    const payload={version:3,exportedAt:new Date().toISOString(),sourceFiles:{a:DATA.nameA,b:DATA.nameB},summary:DATA.summary,decisions};
-    await uploadToGistShared(JSON.stringify(payload,null,2),'bookmark-review-decisions.json','Bookmark review decisions','decisions');
+    const p=recallReviewExport(fmt)||rememberReviewExport(fmt,decisionExportPayload());
+    await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
     return;
   }
 
@@ -1176,24 +1256,13 @@ document.getElementById('btnGist').onclick=async()=>{
     return;
   }
 
-  // ── 3. 审核后的合并结果（单格式）──
-  const mapping={a_edge:['a','edge'],a_safari:['a','safari'],a_json:['a','json'],a_bookmarkhub:['a','bookmarkhub'],b_edge:['b','edge'],b_safari:['b','safari'],b_json:['b','json'],b_bookmarkhub:['b','bookmarkhub']};
-  const sel=mapping[fmt];
-  if(sel){
-    const entries=collectSide(sel[0]);
-    const tree=buildTree(entries,true);
-    const p=buildExportPayload(tree,sel[1]);
-    await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
-    return;
+  // ── 3. 单文件导出：审核后的合并结果，或原始数据重新序列化 ──
+  let p=recallReviewExport(fmt);
+  if(!p){
+    const built=reviewSingleExportPayload(fmt);
+    if(built)p=rememberReviewExport(fmt,built);
   }
-
-  // ── 4. 原始数据重新序列化（未经审核决策，但重新序列化）──
-  const rawMapping={raw_a_edge:['a','edge'],raw_a_safari:['a','safari'],raw_a_json:['a','json'],raw_a_bookmarkhub:['a','bookmarkhub'],raw_b_edge:['b','edge'],raw_b_safari:['b','safari'],raw_b_json:['b','json'],raw_b_bookmarkhub:['b','bookmarkhub']};
-  const rawSel=rawMapping[fmt];
-  if(rawSel){
-    const entries=rawSel[0]==='a'?DATA.allA:DATA.allB;
-    const tree=buildTree(entries,true);
-    const p=buildExportPayload(tree,rawSel[1]);
+  if(p){
     await uploadToGistShared(p.content,p.filename,p.description,p.fmt);
     return;
   }
@@ -1347,7 +1416,7 @@ async function fetchFromGist(){
 
   showLoading({title:'从 Gist 下载',text:'正在连接 GitHub...'});
 
-  let rawUrl=url,gistFileName='从 Gist 下载';
+  let rawUrl=url,gistFileName=decodeURIComponent(url.split('/').pop().split('?')[0]||'从 Gist 下载');
   if(url.includes('gist.github.com')&&!url.includes('raw.githubusercontent.com')){
     try{
       const gistId=url.split('/').pop().split('#')[0];
@@ -1374,6 +1443,8 @@ async function fetchFromGist(){
     const parsed=autoParse(text);
     GIST_DATA.bookmarks=parsed.bm;
     GIST_DATA.filename=gistFileName;
+    GIST_DATA.rawText=text;
+    GIST_DATA.rawFmt=parsed.fmt;
     nameGist.textContent=`${gistFileName} (${parsed.fmt}, ${parsed.bm.length} 个书签)`;
     document.getElementById('gistActions').classList.remove('hidden');
     hideLoading();
