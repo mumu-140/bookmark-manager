@@ -17,6 +17,10 @@ body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.65 -apple-system,
 .drop-zone h3{margin:0 0 4px;font-size:18px}
 .drop-zone p{margin:0;color:var(--mt);font-size:14px}
 .drop-zone .fname{margin-top:8px;font-weight:700;color:var(--grn)}
+.import-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:-4px 0 16px}
+.side-upload{border:1px solid var(--blu);border-radius:var(--r);padding:10px 14px;background:var(--bbg);color:var(--blu);font:600 14px/1.35 inherit;cursor:pointer;transition:all .12s}
+.side-upload:hover{background:#d8e8f8}
+.side-upload:disabled{opacity:.42;cursor:default;background:var(--sf2);border-color:var(--ln);color:var(--mt)}
 .go-btn{display:block;width:100%;padding:14px;border:none;border-radius:var(--r);background:var(--ac);color:#fff;font:600 16px/1 inherit;cursor:pointer;margin-top:8px}
 .go-btn:hover{background:var(--ach)}
 .go-btn:disabled{opacity:.4;cursor:default}
@@ -127,7 +131,7 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
 .safari-modal-close{display:block;width:100%;margin-top:16px;padding:10px;border:1px solid var(--ln);border-radius:var(--r);background:#fff;font:inherit;cursor:pointer;transition:all .12s}
 .safari-modal-close:hover{border-color:var(--ac);color:var(--ac)}
 @media (prefers-reduced-motion:reduce){.help-panel,.help-mask,.help-fab,.safari-modal-mask,.safari-modal{transition:none}}
-@media(max-width:700px){.bar{flex-direction:column}.stats{grid-template-columns:1fr 1fr}.cmp{grid-template-columns:1fr}.help-fab{right:14px;bottom:14px;padding:11px 17px}}
+@media(max-width:700px){.bar{flex-direction:column}.stats{grid-template-columns:1fr 1fr}.cmp,.import-actions{grid-template-columns:1fr}.help-fab{right:14px;bottom:14px;padding:11px 17px}}
 @media(max-width:600px){#homeScreen>div{grid-template-columns:1fr!important}}
 </style>
 </head>
@@ -204,18 +208,22 @@ main{max-width:1100px;margin:0 auto;padding:16px 20px 40px}
 <div id="compareScreen" class="import-wrap hidden">
   <button onclick="backToHome()" style="border:1px solid var(--ln);border-radius:8px;padding:6px 12px;background:#fff;font:13px inherit;cursor:pointer;margin-bottom:20px">← 返回首页</button>
   <h1>双向对比审核</h1>
-  <p class="desc">导入两份书签文件进行对比审核。支持 Netscape 书签 HTML 和 BookmarkHub JSON，自动识别。</p>
+  <p class="desc">导入两份书签文件进行对比审核。也可以只导入其中一侧，直接上传到 GitHub Gist。</p>
   <div class="drop-zone" id="dropA">
     <h3>A 书签</h3>
-    <p>拖放或点击选择（HTML / JSON）</p>
+    <p>拖放或点击选择（HTML / JSON / TXT）</p>
     <div class="fname" id="nameA"></div>
-    <input type="file" accept=".html,.htm,.json" hidden id="fileA">
+    <input type="file" accept=".html,.htm,.json,.txt" hidden id="fileA">
   </div>
   <div class="drop-zone" id="dropB">
     <h3>B 书签</h3>
-    <p>拖放或点击选择（HTML / JSON）</p>
+    <p>拖放或点击选择（HTML / JSON / TXT）</p>
     <div class="fname" id="nameB"></div>
-    <input type="file" accept=".html,.htm,.json" hidden id="fileB">
+    <input type="file" accept=".html,.htm,.json,.txt" hidden id="fileB">
+  </div>
+  <div class="import-actions">
+    <button type="button" class="side-upload" id="uploadRawA" disabled>直接上传 A 到 Gist</button>
+    <button type="button" class="side-upload" id="uploadRawB" disabled>直接上传 B 到 Gist</button>
   </div>
   <div style="text-align:center;margin-bottom:8px">
     <button class="safari-hint" onclick="showSafariHint()">🧭 Safari 用户？终端一键导出书签</button>
@@ -579,6 +587,7 @@ const dropA=document.getElementById('dropA'),dropB=document.getElementById('drop
 const fileA=document.getElementById('fileA'),fileB=document.getElementById('fileB');
 const nA=document.getElementById('nameA'),nB=document.getElementById('nameB');
 const goBtn=document.getElementById('goBtn');
+const uploadRawA=document.getElementById('uploadRawA'),uploadRawB=document.getElementById('uploadRawB');
 let rawA=null,rawB=null,fnA='',fnB='';
 
 function setupDrop(zone,inp,side){
@@ -590,10 +599,36 @@ function setupDrop(zone,inp,side){
 }
 function rd(file,side){
   const r=new FileReader();
-  r.onload=()=>{if(side==='a'){rawA=r.result;fnA=file.name;nA.textContent=file.name}else{rawB=r.result;fnB=file.name;nB.textContent=file.name};goBtn.disabled=!(rawA&&rawB)};
+  r.onload=()=>{
+    if(side==='a'){
+      rawA=r.result;fnA=file.name;nA.textContent=file.name;
+    }else{
+      rawB=r.result;fnB=file.name;nB.textContent=file.name;
+    }
+    goBtn.disabled=!(rawA&&rawB);
+    updateImportActions();
+  };
   r.readAsText(file,'utf-8');
 }
 setupDrop(dropA,fileA,'a');setupDrop(dropB,fileB,'b');
+
+function updateImportActions(){
+  uploadRawA.disabled=!rawA;
+  uploadRawB.disabled=!rawB;
+}
+
+async function uploadImportedSideToGist(side){
+  const isA=side==='a';
+  const raw=isA?rawA:rawB;
+  const filename=isA?fnA:fnB;
+  const label=isA?'A':'B';
+  if(!raw){alert(label+' 侧未导入文件，无法上传');return}
+  await uploadToGistShared(raw,filename||'bookmarks.html',label+' side original bookmarks file','rawfile');
+}
+
+uploadRawA.onclick=()=>uploadImportedSideToGist('a');
+uploadRawB.onclick=()=>uploadImportedSideToGist('b');
+updateImportActions();
 
 function trimPaths(bm,skip){
   if(!skip)return bm;
@@ -1505,6 +1540,7 @@ function sendToCompare(side){
 
   // 更新按钮状态
   document.getElementById('goBtn').disabled=!(rawA&&rawB);
+  updateImportActions();
 
   const msg=side==='a'?'已将数据设为 A 侧':'已将数据设为 B 侧';
   alert(`✅ ${msg}\n\n请继续导入另一侧书签，然后点击"开始对比审核"。`);
